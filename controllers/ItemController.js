@@ -5,8 +5,8 @@ const { Op } = require('sequelize')
 class ItemController {
     async create(req, res, next) {
         try {
-            const { name, item_uid, category } = req.body
-            const item = await Item.create({ name, item_uid, category })
+            const { name, item_uid, category, brand, model, orders } = req.body
+            const item = await Item.create({ name, item_uid, category, brand, model, orders })
             return res.json(item)
         } catch (e) {
             next(ApiError.badRequest(e.message))
