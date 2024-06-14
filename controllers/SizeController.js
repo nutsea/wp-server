@@ -4,11 +4,41 @@ const ApiError = require('../error/apiError')
 class SizeController {
     async create(req, res, next) {
         try {
-            const { id, size, price, item_uid } = req.body
-            const size_item = await Size.create({ id, size, price, item_uid })
+            const { id, size, price, item_uid, size_type, size_default, item_category } = req.body
+            const default_size = size_default || size
+            const size_item = await Size.create({ id, size, price, item_uid, size_type, default_size: default_size, item_category })
             return res.json(size_item)
         } catch (error) {
             return next(ApiError.badRequest(error.message))
+        }
+    }
+
+    async getAll(req, res, next) {
+        try {
+            const { size_type, item_category } = req.query
+            const sizes = await Size.findAll({
+                attributes: ['size'],
+                where: {
+                    size_type,
+                    ...(item_category && { item_category })
+                },
+                group: ['size'],
+                raw: true
+            })
+            return res.json(sizes)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async getMinMaxPrice(req, res, next) {
+        try {
+            const { item_category } = req.query
+            const min = await Size.min('price', { where: { ...(item_category && { item_category }) } })
+            const max = await Size.max('price', { where: { ...(item_category && { item_category }) } })
+            return res.json({ min, max })
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
         }
     }
 }

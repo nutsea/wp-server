@@ -29,7 +29,7 @@ class AuthController {
                 const user = await User.findOne({ where: { phone: auth.phone } })
                 const token = generateJwt(user.id, user.name, user.phone)
                 await auth.destroy()
-                return res.json(token)
+                return res.json({ token, user })
             } else {
                 return next(ApiError.badRequest())
             }

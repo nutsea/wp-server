@@ -5,8 +5,11 @@ const { v4: uuidv4 } = require('uuid')
 const Item = sequelize.define('items', {
     id: { type: DataTypes.UUID, defaultValue: uuidv4, primaryKey: true, allowNull: false, unique: true },
     name: { type: DataTypes.STRING, allowNull: false },
+    brand: { type: DataTypes.STRING },
+    model: { type: DataTypes.STRING },
     item_uid: { type: DataTypes.STRING, allowNull: false },
-    category: { type: DataTypes.STRING }
+    category: { type: DataTypes.STRING },
+    orders: { type: DataTypes.INTEGER, defaultValue: 0 },
 })
 
 const Photo = sequelize.define('photos', {
@@ -19,16 +22,19 @@ const Size = sequelize.define('sizes', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     size: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.FLOAT, allowNull: false },
-    item_uid: { type: DataTypes.STRING, allowNull: false }
+    item_uid: { type: DataTypes.STRING, allowNull: false },
+    size_type: { type: DataTypes.STRING, allowNull: false, defaultValue: 'EU' },
+    size_default: { type: DataTypes.STRING },
+    item_category: { type: DataTypes.STRING }
 })
 
-const SizesTable = sequelize.define('sizes_table', {
-    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    size_type: { type: DataTypes.STRING, allowNull: false },
-    size_default: { type: DataTypes.STRING, allowNull: false },
-    size: { type: DataTypes.STRING, allowNull: false },
-    item_uid: { type: DataTypes.STRING, allowNull: false }
-})
+// const SizesTable = sequelize.define('sizes_table', {
+//     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+//     size_type: { type: DataTypes.STRING, allowNull: false },
+//     size_default: { type: DataTypes.STRING, allowNull: false },
+//     size: { type: DataTypes.STRING, allowNull: false },
+//     item_uid: { type: DataTypes.STRING, allowNull: false }
+// })
 
 const User = sequelize.define('user', {
     id: { type: DataTypes.UUID, defaultValue: uuidv4, primaryKey: true, allowNull: false, unique: true },
@@ -46,6 +52,8 @@ const Fav = sequelize.define('favs', {
 const Cart = sequelize.define('cart', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     item_uid: { type: DataTypes.STRING, allowNull: false },
+    size: { type: DataTypes.STRING, allowNull: false },
+    size_type: { type: DataTypes.STRING, allowNull: false },
 })
 
 const Order = sequelize.define('orders', {
@@ -112,7 +120,7 @@ module.exports = {
     Item,
     Photo,
     Size,
-    SizesTable,
+    // SizesTable,
     User,
     Fav,
     Cart,

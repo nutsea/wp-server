@@ -8,15 +8,15 @@ const router = require('./routes/index')
 const path = require('path')
 const https = require('https')
 const fs = require('fs')
+const { v4: uuidv4 } = require('uuid')
 
 const PORT = process.env.PORT || 5000
 
 // for linux
-
-// const options = {
-//     key: fs.readFileSync('/etc/letsencrypt/live/server.hockeystickstop.com/privkey.pem'),
-//     cert: fs.readFileSync('/etc/letsencrypt/live/server.hockeystickstop.com/cert.pem')
-// }
+const options = {
+    key: fs.readFileSync('/etc/letsencrypt/live/server.hockeystickstop.com/privkey.pem'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/server.hockeystickstop.com/cert.pem')
+}
 
 const app = express()
 app.use(cors())
@@ -26,16 +26,16 @@ app.use(fileUpload({}))
 app.use('/api', router)
 
 // for linux
-
-// const server = https.createServer(options, app)
+const server = https.createServer(options, app)
 
 const start = async () => {
     try {
         await sequelize.authenticate()
         await sequelize.sync()
-        app.listen(PORT, () => console.log(`Server started on port ${PORT}`))
+        // not for linux
+        // app.listen(PORT, () => console.log(`Server started on port ${PORT}`))
         // for linux
-        // server.listen(PORT, () => console.log(`Server started on port ${PORT}`))
+        server.listen(PORT, () => console.log(`Server started on port ${PORT}`))
     } catch (e) {
         console.log(e)
     }
@@ -50,21 +50,21 @@ const bot = new Telegraf(token)
 
 bot.start(async (ctx) => {
     try {
-        const text = ctx.message.text
-        console.log(text)
-        const code = text.split(' ')[1]
-        if (code) {
-            let auth = await models.Auth.findOne({ where: { code } })
-            auth.chat_id = ctx.chat.id
-            await auth.save()
-            ctx.reply('Нажмите кнопку ниже, чтобы авторизоваться.',
-                Markup.keyboard([
-                    Markup.button.contactRequest('Отправить номер телефона')
-                ]).resize()
-            )
-        } else {
-            ctx.reply('Для авторизации перейдите на сайт и нажмите "Вход" или "Авторизация через Telegram"')
+        const authCode = uuidv4()
+        const chat_id = ctx.chat.id.toString()
+        let auth = await models.Auth.findOne({ where: { chat_id } })
+        if (!auth) {
+            await models.Auth.create({ code: authCode, chat_id })
         }
+        else {
+            auth.code = authCode
+            await auth.save()
+        }
+        ctx.reply('Нажмите кнопку ниже, чтобы авторизоваться.',
+            Markup.keyboard([
+                Markup.button.contactRequest('Отправить номер телефона')
+            ]).resize()
+        )
     } catch (e) {
         console.log(e)
     }
@@ -89,18 +89,30 @@ bot.on('contact', async (ctx) => {
         const phone = normalizePhoneNumber(contact.phone_number)
         const name = contact.first_name ? contact.first_name : contact.username
         const surname = contact.last_name || ''
-    
+
         let user = await models.User.findOne({ where: { phone } })
         if (!user) {
             user = await models.User.create({ name, surname, phone })
         }
-    
+
         let auth = await models.Auth.findOne({ where: { chat_id: chat_id.toString() } })
         if (auth) {
             auth.status = 'authentificated'
             auth.phone = phone
             await auth.save()
-            ctx.reply(`Вы прошли авторизацию! Для продолжения вернитесь на сайт.`)
+            // not for linux
+            // ctx.reply(`Вы прошли авторизацию! Для продолжения перейдите по ссылке http://localhost:3000/?authcode=${auth.code}`)
+
+            // for linux
+            ctx.reply('Вы прошли авторизацию! Для продолжения перейдите на сайт по ссылке ниже:', {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            { text: 'Перейти на сайт', url: `https://wearpoizon.netlify.app/?authcode=${auth.code}` }
+                        ]
+                    ]
+                }
+            })
         }
     } catch (e) {
         console.log(e)
