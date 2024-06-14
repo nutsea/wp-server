@@ -14,8 +14,8 @@ const PORT = process.env.PORT || 5000
 
 // for linux
 const options = {
-    key: fs.readFileSync('/etc/letsencrypt/live/server.hockeystickstop.com/privkey.pem'),
-    cert: fs.readFileSync('/etc/letsencrypt/live/server.hockeystickstop.com/cert.pem')
+    key: fs.readFileSync('/etc/letsencrypt/live/wearpoizon.workinit.ru/privkey.pem'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/wearpoizon.workinit.ru/cert.pem')
 }
 
 const app = express()
