@@ -31,6 +31,23 @@ class SizeController {
         }
     }
 
+    async getPrice(req, res, next) {
+        try {
+            const { size_type, item_category, size } = req.query
+            const price = await Size.findOne({
+                attributes: ['price'],
+                where: {
+                    size_type,
+                    item_category,
+                    size
+                }
+            })
+            return res.json(price)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
     async getMinMaxPrice(req, res, next) {
         try {
             const { item_category } = req.query

@@ -9,6 +9,8 @@ const path = require('path')
 const https = require('https')
 const fs = require('fs')
 const { v4: uuidv4 } = require('uuid')
+const cron = require('node-cron')
+const { setPointsList } = require('./controllers/CdekController')
 
 const PORT = process.env.PORT || 5000
 
@@ -32,10 +34,13 @@ const start = async () => {
     try {
         await sequelize.authenticate()
         await sequelize.sync()
+
         // not for linux
         // app.listen(PORT, () => console.log(`Server started on port ${PORT}`))
+
         // for linux
         server.listen(PORT, () => console.log(`Server started on port ${PORT}`))
+
     } catch (e) {
         console.log(e)
     }
@@ -49,25 +54,11 @@ const token = '7117696688:AAGBCpe3nQEziMRibTakCm6UjDkUgG7shVs'
 const bot = new Telegraf(token)
 
 bot.start(async (ctx) => {
-    try {
-        const authCode = uuidv4()
-        const chat_id = ctx.chat.id.toString()
-        let auth = await models.Auth.findOne({ where: { chat_id } })
-        if (!auth) {
-            await models.Auth.create({ code: authCode, chat_id })
-        }
-        else {
-            auth.code = authCode
-            await auth.save()
-        }
-        ctx.reply('Нажмите кнопку ниже, чтобы авторизоваться.',
-            Markup.keyboard([
-                Markup.button.contactRequest('Отправить номер телефона')
-            ]).resize()
-        )
-    } catch (e) {
-        console.log(e)
-    }
+    ctx.reply('Нажмите кнопку ниже, чтобы авторизоваться.',
+        Markup.keyboard([
+            ['Авторизоваться']
+        ]).resize()
+    );
 })
 
 const normalizePhoneNumber = (phoneNumber) => {
@@ -82,6 +73,26 @@ const normalizePhoneNumber = (phoneNumber) => {
     }
 }
 
+const checkAuth = async (auth, phone, ctx) => {
+    auth.status = 'authentificated'
+    auth.phone = phone
+    await auth.save()
+
+    // not for linux
+    // ctx.reply(`Вы прошли авторизацию! Для продолжения перейдите по ссылке http://localhost:3000/?authcode=${auth.code}`)
+
+    // for linux
+    ctx.reply('Вы прошли авторизацию! Для продолжения перейдите на сайт по ссылке ниже:', {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: 'Перейти на сайт', url: `https://wearpoizon.netlify.app/?authcode=${auth.code}` }
+                ]
+            ]
+        }
+    })
+}
+
 bot.on('contact', async (ctx) => {
     try {
         const contact = ctx.message.contact
@@ -92,33 +103,65 @@ bot.on('contact', async (ctx) => {
 
         let user = await models.User.findOne({ where: { phone } })
         if (!user) {
-            user = await models.User.create({ name, surname, phone })
+            user = await models.User.create({ name, surname, phone, chat_id })
         }
 
         let auth = await models.Auth.findOne({ where: { chat_id: chat_id.toString() } })
         if (auth) {
-            auth.status = 'authentificated'
-            auth.phone = phone
-            await auth.save()
-            // not for linux
-            // ctx.reply(`Вы прошли авторизацию! Для продолжения перейдите по ссылке http://localhost:3000/?authcode=${auth.code}`)
-
-            // for linux
-            ctx.reply('Вы прошли авторизацию! Для продолжения перейдите на сайт по ссылке ниже:', {
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            { text: 'Перейти на сайт', url: `https://wearpoizon.netlify.app/?authcode=${auth.code}` }
-                        ]
-                    ]
-                }
-            })
+            checkAuth(auth, phone, ctx)
         }
     } catch (e) {
         console.log(e)
     }
 })
 
+bot.hears('Авторизоваться', async (ctx) => {
+    const chat_id = ctx.chat.id
+    let user = await models.User.findOne({ where: { chat_id } })
+    let auth = await models.Auth.findOne({ where: { chat_id: chat_id.toString() } })
+    if (auth) {
+        if (user) {
+            checkAuth(auth, user.phone, ctx)
+        } else {
+            ctx.reply('Нажмите кнопку ниже, чтобы отправить номер телефона.',
+                Markup.keyboard([
+                    [Markup.button.contactRequest('Отправить номер телефона')],
+                    ['Отмена']
+                ]).resize()
+            );
+        }
+    } else {
+        try {
+            const authCode = uuidv4()
+            await models.Auth.create({ code: authCode, chat_id: chat_id.toString() })
+            if (user) {
+                checkAuth(auth, user.phone, ctx)
+            } else {
+                ctx.reply('Нажмите кнопку ниже, чтобы отправить номер телефона.',
+                    Markup.keyboard([
+                        [Markup.button.contactRequest('Отправить номер телефона')],
+                        ['Отмена']
+                    ]).resize()
+                );
+            }
+        } catch (e) {
+            console.log(e)
+        }
+    }
+});
+
+bot.hears('Отмена', (ctx) => {
+    ctx.reply('Вы отменили авторизацию.',
+        Markup.keyboard([
+            ['Авторизоваться']
+        ]).resize()
+    )
+})
+
 bot.launch()
 
 console.log('Бот запущен')
+
+cron.schedule('0 0 * * *', setPointsList, {
+    timezone: "Europe/Moscow"
+})

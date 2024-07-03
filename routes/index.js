@@ -12,6 +12,7 @@ const sizeRouter = require('./SizeRouter')
 // const sizesTableRouter = require('./SizesTableRouter')
 const storyRouter = require('./StoryRouter')
 const userRouter = require('./UserRouter')
+const cdekRouter = require('./CdekRouter')
 
 router.use('/auth', authRouter)
 router.use('/cart', cartRouter)
@@ -25,5 +26,6 @@ router.use('/size', sizeRouter)
 // router.use('/sizes_table', sizesTableRouter)
 router.use('/story', storyRouter)
 router.use('/user', userRouter)
+router.use('/cdek', cdekRouter)
 
 module.exports = router

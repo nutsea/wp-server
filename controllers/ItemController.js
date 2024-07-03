@@ -1,6 +1,21 @@
 const { Item, Photo, Size } = require('../models/models')
 const ApiError = require('../error/apiError')
 const { Op } = require('sequelize')
+const { getPoizonItem } = require('../services/poizonService')
+
+function filterString(str) {
+    const regex = /[^a-zA-Zа-яА-Я0-9 ]/g
+    return str.replace(regex, '')
+}
+
+function translateToSM(str) {
+    if (str === "适合脚长") return "SM"
+}
+
+function convertStringToArray(sizesString) {
+    const sizesArray = sizesString.split(',').map(item => parseFloat(item.trim()))
+    return sizesArray
+}
 
 class ItemController {
     async create(req, res, next) {
@@ -9,7 +24,100 @@ class ItemController {
             const item = await Item.create({ name, item_uid, category, brand, model, orders })
             return res.json(item)
         } catch (e) {
-            next(ApiError.badRequest(e.message))
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async createBySpuId(req, res, next) {
+        try {
+            const { spuIdArr, category } = req.body
+            let items = []
+            for (let i of spuIdArr) {
+                await getPoizonItem(i).then(async data => {
+                    try {
+                        const isItem = await Item.findOne({ where: { item_uid: i.toString() } })
+                        if (!isItem) {
+                            const item = await Item.create({ name: filterString(data.detail.originalTitle), item_uid: i.toString(), category, brand: filterString(data.brandRootInfo.brandItemList[0].brandName), model: filterString(data.detail.originalTitle), orders: 0 })
+                            items.push(item)
+                        }
+                        for (let j of data.image.spuImage.images) {
+                            const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
+                            if (!isPhoto)
+                                await Photo.create({ img: j.url, item_uid: i.toString() })
+                        }
+                        let list = data.sizeDto.sizeInfo.sizeTemplate.list
+                        for (let j of list) {
+                            if (j.sizeKey === '适合脚长') j.sizeKey = 'SM'
+                            j.sizeKey = filterString(j.sizeKey)
+                            j.sizeValue = convertStringToArray(j.sizeValue)
+                        }
+                        for (let j = 0; j < data.skus.length; j++) {
+                            for (let k of list) {
+                                try {
+                                    const isSize = await Size.findOne({ where: { size: k.sizeValue[j].toString(), item_uid: i.toString(), size_type: k.sizeKey } })
+                                    if (!isSize) {
+                                        await Size.create({ size: k.sizeValue[j], price: data.skus[j].price.prices[0].price, item_uid: i.toString(), size_type: k.sizeKey, size_default: list[0].sizeValue[j], item_category: category })
+                                    }
+                                    else {
+                                        isSize.price = data.skus[j].price.prices[0].price
+                                        await isSize.save()
+                                    }
+                                } catch (e) {
+                                    console.log(e)
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+            }
+            return res.json(items)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async checkCost(req, res, next) {
+        try {
+            const { spuIdArr } = req.query
+            let ids = JSON.parse(spuIdArr)
+            let sizes = []
+            for (let i of ids) {
+                await getPoizonItem(i).then(async data => {
+                    try {
+                        let list = data.sizeDto.sizeInfo.sizeTemplate.list
+                        for (let j of list) {
+                            if (j.sizeKey === '适合脚长') j.sizeKey = 'SM'
+                            j.sizeKey = filterString(j.sizeKey)
+                            j.sizeValue = convertStringToArray(j.sizeValue)
+                        }
+                        for (let j = 0; j < data.skus.length; j++) {
+                            for (let k of list) {
+                                try {
+                                    const isSize = await Size.findOne({ where: { size: k.sizeValue[j].toString(), item_uid: i.toString(), size_type: k.sizeKey } })
+                                    if (!isSize) {
+                                        const size = await Size.create({ size: k.sizeValue[j], price: data.skus[j].price.prices[0].price, item_uid: i.toString(), size_type: k.sizeKey, size_default: list[0].sizeValue[j], item_category: category })
+                                        sizes.push(size)
+                                    }
+                                    else {
+                                        isSize.price = data.skus[j].price.prices[0].price
+                                        await isSize.save()
+                                        sizes.push(isSize)
+                                    }
+                                } catch (e) {
+                                    console.log(e)
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+            }
+            return res.json(sizes)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
         }
     }
 
@@ -51,6 +159,7 @@ class ItemController {
             const { category, brands, models, sizes, size_type, prices, sort, limit, page } = req.query
             const sizesDB = await Size.findAll({
                 where: {
+                    ...(category && { item_category: category }),
                     size_type,
                     ...(sizes && { size: { [Op.in]: sizes } }),
                     ...(prices && { price: { [Op.gte]: prices[0], [Op.lte]: prices[1] } }),
@@ -58,7 +167,6 @@ class ItemController {
             })
             let pageClient = Number(page) || 1
             let limitClient = Number(limit) || 18
-            // let offset = pageClient * limitClient - limitClient
             let offset = Number(pageClient) * Number(limitClient) - Number(limitClient)
             let conditions = {}
             if (models && brands) {
@@ -142,6 +250,7 @@ class ItemController {
         try {
             const { id_arr } = req.query
             let ids = JSON.parse(id_arr)
+            console.log(ids)
             let items = await Item.findAll({ where: { id: { [Op.in]: ids } } })
             for (let i = 0; i < items.length; i++) {
                 const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
@@ -156,6 +265,30 @@ class ItemController {
                 items[i].dataValues.minPrice = minPrice
             }
             return res.json(items)
+        } catch (e) {
+            next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async getCartItems(req, res, next) {
+        try {
+            const { items_arr } = req.query
+            let items = JSON.parse(items_arr)
+            let newItems = []
+            if (Array.isArray(items)) {
+                for (let i of items) {
+                    let item = await Item.findOne({ where: { id: i.id } })
+                    const img = await Photo.findOne({ where: { item_uid: item.dataValues.item_uid } })
+                    item.dataValues.img = img.dataValues.img
+                    newItems.push(item)
+                }
+                for (let i = 0; i < newItems.length; i++) {
+                    const price = await Size.findOne({ where: { item_uid: newItems[i].dataValues.item_uid, size: items[i].size } })
+                    newItems[i].dataValues.price = price.dataValues.price
+                    newItems[i].dataValues.size = items[i].size
+                }
+            }
+            return res.json(newItems)
         } catch (e) {
             next(ApiError.badRequest(e.message))
         }

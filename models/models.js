@@ -28,20 +28,13 @@ const Size = sequelize.define('sizes', {
     item_category: { type: DataTypes.STRING }
 })
 
-// const SizesTable = sequelize.define('sizes_table', {
-//     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-//     size_type: { type: DataTypes.STRING, allowNull: false },
-//     size_default: { type: DataTypes.STRING, allowNull: false },
-//     size: { type: DataTypes.STRING, allowNull: false },
-//     item_uid: { type: DataTypes.STRING, allowNull: false }
-// })
-
 const User = sequelize.define('user', {
     id: { type: DataTypes.UUID, defaultValue: uuidv4, primaryKey: true, allowNull: false, unique: true },
     name: { type: DataTypes.STRING, allowNull: false },
     surname: { type: DataTypes.STRING },
     phone: { type: DataTypes.STRING },
-    email: { type: DataTypes.STRING }
+    email: { type: DataTypes.STRING },
+    chat_id: { type: DataTypes.INTEGER },
 })
 
 const Fav = sequelize.define('favs', {
@@ -53,7 +46,6 @@ const Cart = sequelize.define('cart', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     item_uid: { type: DataTypes.STRING, allowNull: false },
     size: { type: DataTypes.STRING, allowNull: false },
-    size_type: { type: DataTypes.STRING, allowNull: false },
 })
 
 const Order = sequelize.define('orders', {
@@ -100,6 +92,14 @@ const Auth = sequelize.define('auth', {
     phone: { type: DataTypes.STRING }
 })
 
+const CityPoint = sequelize.define('city_points', {
+    id: { type: DataTypes.UUID, primaryKey: true, allowNull: false, unique: true },
+    city: { type: DataTypes.STRING, allowNull: false },
+    city_code: { type: DataTypes.INTEGER, allowNull: false },
+    work_time: { type: DataTypes.STRING },
+    address: { type: DataTypes.STRING, allowNull: false },
+})
+
 User.hasMany(Fav, { foreignKey: 'client_id' })
 Fav.belongsTo(User, { foreignKey: 'client_id' })
 
@@ -127,5 +127,6 @@ module.exports = {
     Order,
     OrderItem,
     OrderPhoto,
-    Story
+    Story,
+    CityPoint
 }
