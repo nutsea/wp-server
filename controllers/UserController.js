@@ -28,7 +28,6 @@ class UserController {
             if (name) user.name = name
             if (surname) user.surname = surname
             if (email) user.email = email
-            console.log(user)
             await user.save()
             return res.json(user)
         } catch (e) {

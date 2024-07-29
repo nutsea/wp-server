@@ -41,6 +41,10 @@ const start = async () => {
         // for linux
         server.listen(PORT, () => console.log(`Server started on port ${PORT}`))
 
+        const course = await models.Course.findAll()
+        if (course.length === 0) {
+            await models.Course.create({ id: 1, course: 15 })
+        }
     } catch (e) {
         console.log(e)
     }
@@ -80,6 +84,7 @@ const checkAuth = async (auth, phone, ctx) => {
 
     // not for linux
     // ctx.reply(`Вы прошли авторизацию! Для продолжения перейдите по ссылке http://localhost:3000/?authcode=${auth.code}`)
+    // ctx.reply(`Вы прошли авторизацию! Для продолжения перейдите по ссылке http://192.168.0.162:3000/?authcode=${auth.code}`)
 
     // for linux
     ctx.reply('Вы прошли авторизацию! Для продолжения перейдите на сайт по ссылке ниже:', {
@@ -100,10 +105,14 @@ bot.on('contact', async (ctx) => {
         const phone = normalizePhoneNumber(contact.phone_number)
         const name = contact.first_name ? contact.first_name : contact.username
         const surname = contact.last_name || ''
+        const link = contact.username
 
         let user = await models.User.findOne({ where: { phone } })
         if (!user) {
-            user = await models.User.create({ name, surname, phone, chat_id })
+            user = await models.User.create({ name, surname, phone, chat_id, link })
+        } else {
+            user.link = link
+            await user.save()
         }
 
         let auth = await models.Auth.findOne({ where: { chat_id: chat_id.toString() } })
@@ -122,6 +131,8 @@ bot.hears('Авторизоваться', async (ctx) => {
     if (auth) {
         if (user) {
             checkAuth(auth, user.phone, ctx)
+            user.link = ctx.message.from.username
+            await user.save()
         } else {
             ctx.reply('Нажмите кнопку ниже, чтобы отправить номер телефона.',
                 Markup.keyboard([
@@ -133,9 +144,11 @@ bot.hears('Авторизоваться', async (ctx) => {
     } else {
         try {
             const authCode = uuidv4()
-            await models.Auth.create({ code: authCode, chat_id: chat_id.toString() })
+            const newAuth = await models.Auth.create({ code: authCode, chat_id: chat_id.toString() })
             if (user) {
-                checkAuth(auth, user.phone, ctx)
+                checkAuth(newAuth, user.phone, ctx)
+                user.link = ctx.message.from.username
+                await user.save()
             } else {
                 ctx.reply('Нажмите кнопку ниже, чтобы отправить номер телефона.',
                     Markup.keyboard([

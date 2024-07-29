@@ -4,8 +4,8 @@ const ApiError = require('../error/apiError')
 class CartController {
     async create(req, res, next) {
         try {
-            const { item_uid, size, client_id } = req.body
-            const item = await Cart.create({ item_uid, size, client_id })
+            const { item_uid, size, client_id, ship } = req.body
+            const item = await Cart.create({ item_uid, size, client_id, ship })
             return res.json(item)
         } catch (e) {
             next(ApiError.badRequest(e.message))
@@ -24,14 +24,13 @@ class CartController {
                         const img = await Photo.findOne({ where: { item_uid: item.dataValues.item_uid } })
                         item.dataValues.img = img.dataValues.img
                         item.dataValues.size = i.size
+                        item.dataValues.ship = i.ship
                         newItems.push(item)
                     }
                 }
                 for (let i = 0; i < newItems.length; i++) {
-                    // const price = await Size.findOne({ where: { item_uid: newItems[i].dataValues.item_uid, size: items[i].size } })
                     const price = await Size.findOne({ where: { item_uid: newItems[i].dataValues.item_uid, size: newItems[i].dataValues.size } })
                     newItems[i].dataValues.price = price.dataValues.price
-                    console.log(price)
                 }
             }
             return res.json(newItems)
@@ -46,6 +45,18 @@ class CartController {
             const item = await Cart.findOne({ where: { item_uid: id, size, client_id: user } })
             await item.destroy()
             return res.json(item)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async clearUserCart(req, res, next) {
+        try {
+            const items = await Cart.findAll({ where: { client_id: req.user.id } })
+            for (let i of items)  {
+                await i.destroy()
+            }
+            return res.json(items)
         } catch (e) {
             return next(ApiError.badRequest(e.message))
         }
