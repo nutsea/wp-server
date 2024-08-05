@@ -113,6 +113,8 @@ const OrderItem = sequelize.define('order_items', {
     rub_cost: { type: DataTypes.FLOAT, allowNull: false },
     order_num: { type: DataTypes.STRING, defaultValue: '' },
     track: { type: DataTypes.STRING, defaultValue: '' },
+    fee: { type: DataTypes.FLOAT, allowNull: false },
+    delivery_cost: { type: DataTypes.FLOAT, allowNull: false },
 })
 
 const OrderPhoto = sequelize.define('order_photos', {

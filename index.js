@@ -133,6 +133,11 @@ bot.on('contact', async (ctx) => {
         if (!user) {
             console.log('user not found')
             user = await models.User.create({ name, surname, phone, chat_id: chat_id.toString(), link })
+            const orders = await models.Order.findAll({ where: { phone } })
+            for (let i of orders) {
+                i.client_id = user.id
+                await i.save()
+            }
         } else {
             user.link = link
             await user.save()

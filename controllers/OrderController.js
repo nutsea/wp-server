@@ -50,8 +50,42 @@ class OrderController {
                             ship: i.ship,
                             cny_cost: i.cny_cost,
                             rub_cost: i.rub_cost,
-                            order_id: order.id
+                            order_id: order.id,
+                            fee: i.fee,
+                            delivery_cost: i.delivery_cost
                         })
+                    })
+                })
+            }
+            const client = await User.findOne({ where: { id: req.user.id } })
+            bot.telegram.sendMessage(client.chat_id, messages[0])
+            return res.json(order)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async createByAdmin(req, res, next) {
+        try {
+            const { name, social_media, recipient, phone, address, ship_type, is_split, first_pay, second_pay, first_paid, second_paid, paid, course, cost, discount, promo_code, comment, can_review, status, items } = req.body
+            let fee = items.map(i => i.fee).reduce((a, b) => a + b)
+            let delivery_cost = items.map(i => i.delivery_cost).reduce((a, b) => a + b)
+            const order = await Order.create({ name, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid, course, fee: Number(fee), cost: Number(cost), discount: Number(discount), promo_code, comment, can_review, status })
+            for (let i of items) {
+                await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
+                    await OrderItem.create({
+                        item_uid: i.item_uid,
+                        name: i.name,
+                        img: i.img,
+                        category: item.category,
+                        size: i.size,
+                        ship: i.ship,
+                        cny_cost: Number(i.cny_cost),
+                        rub_cost: Number(i.rub_cost),
+                        order_id: order.id,
+                        fee: Number(i.fee),
+                        delivery_cost: Number(i.delivery_cost)
                     })
                 })
             }
@@ -95,10 +129,10 @@ class OrderController {
 
     async getAll(req, res, next) {
         try {
-            const { search } = req.query
+            const { search, statuses } = req.query
             const orders = await Order.findAll({
                 where: {
-                    status: { [Op.ne]: 0 },
+                    status: { [Op.in]: statuses },
                     ...(search && {
                         [Op.or]: [
                             { name: { [Op.iLike]: `%${search}%` } },
@@ -379,13 +413,34 @@ class OrderController {
 
     async updateOrderItems(req, res, next) {
         try {
-            const { idArr, statuses, orderNums, trackNums } = req.body
-            console.log(trackNums)
+            const { idArr, statuses, orderNums, trackNums, pricesCNY, pricesRUB, fees, deliveries } = req.body
             for (let i = 0; i < idArr.length; i++) {
                 const item = await OrderItem.findOne({ where: { id: idArr[i] } })
                 item.status = statuses[i] ? statuses[i] : item.status
                 item.order_num = orderNums[i] ? orderNums[i] : item.order_num
                 item.track = trackNums[i] ? trackNums[i] : item.track
+                const order = await Order.findOne({ where: { id: item.order_id } })
+                if (pricesRUB[i]) {
+                    order.cost = Number(order.cost) - Number(item.rub_cost) + Number(pricesRUB[i])
+                }
+                if (pricesCNY[i]) {
+                    order.discount_cost = Number(order.discount_cost) - Number(item.rub_cost) + Number(pricesRUB[i])
+                }
+                if (fees[i]) {
+                    order.fee = Number(order.fee) - Number(item.fee) + Number(fees[i])
+                    order.cost = Number(order.cost) - Number(item.fee) + Number(fees[i])
+                    order.discount_cost = Number(order.discount_cost) - Number(item.fee) + Number(fees[i])
+                }
+                if (deliveries[i]) {
+                    order.delivery_cost = Number(order.delivery_cost) - Number(item.delivery_cost) + Number(deliveries[i])
+                    order.cost = Number(order.cost) - Number(item.delivery_cost) + Number(deliveries[i])
+                    order.discount_cost = Number(order.discount_cost) - Number(item.delivery_cost) + Number(deliveries[i])
+                }
+                item.cny_cost = pricesCNY[i] ? pricesCNY[i] : item.cny_cost
+                item.rub_cost = pricesRUB[i] ? pricesRUB[i] : item.rub_cost
+                item.fee = fees[i] ? fees[i] : item.fee
+                item.delivery_cost = deliveries[i] ? deliveries[i] : item.delivery_cost
+                await order.save()
                 await item.save()
             }
             return res.json({ message: 'Позиции обновлены' })
@@ -397,7 +452,7 @@ class OrderController {
 
     async updateOrder(req, res, next) {
         try {
-            const { id, status, recipient, phone, ship_type, comment, address, track, cdekTrack, dimensions, cargo_cost, sdek_cost, first_pay, second_pay, firstPaid, secondPaid, paid, deliveryCost, canReview } = req.body
+            const { id, status, recipient, phone, ship_type, comment, address, track, cdekTrack, dimensions, cargo_cost, sdek_cost, first_pay, second_pay, firstPaid, secondPaid, paid, canReview } = req.body
             const order = await Order.findOne({ where: { id } })
             order.recipient = recipient ? recipient : order.recipient
             order.phone = phone ? phone : order.phone
@@ -414,11 +469,6 @@ class OrderController {
             order.first_paid = firstPaid !== undefined ? firstPaid : order.first_paid
             order.second_paid = secondPaid !== undefined ? secondPaid : order.second_paid
             order.paid = paid ? paid : order.paid
-            if (deliveryCost) {
-                order.cost = Number(order.cost) - Number(order.delivery_cost) + Number(deliveryCost)
-                order.discount_cost = Number(order.discount_cost) - Number(order.delivery_cost) + Number(deliveryCost)
-            }
-            order.delivery_cost = deliveryCost ? deliveryCost : order.delivery_cost
             order.can_review = canReview !== undefined ? canReview : order.can_review
             let allow = true
 

@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/authMiddleware')
 const adminMiddleware = require('../middleware/adminMiddleware')
 
 router.post('/', authMiddleware, orderController.create)
+router.post('/byadmin', adminMiddleware, orderController.createByAdmin)
 router.get('/in', authMiddleware, orderController.getIn)
 router.get('/', authMiddleware, orderController.getAll)
 router.get('/one', authMiddleware, orderController.getOne)

@@ -2,6 +2,7 @@ const { User } = require('../models/models')
 const ApiError = require('../error/apiError')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
+const { Op, or } = require('sequelize')
 
 const generateJwt = (id, name, role) => {
     return jwt.sign(
@@ -95,6 +96,46 @@ class UserController {
             const { id } = req.query
             const user = await User.findOne({ where: { id } })
             return res.json(user)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
+    }
+
+    async getAll(req, res, next) {
+        try {
+            const { search } = req.query
+            const users = await User.findAll({
+                where: {
+                    ...(search && {
+                        [Op.or]: [
+                            { name: { [Op.iLike]: `%${search}%` } },
+                            { surname: { [Op.iLike]: `%${search}%` } },
+                            { email: { [Op.iLike]: `%${search}%` } },
+                            { phone: { [Op.iLike]: `%${search}%` } },
+                            { link: { [Op.iLike]: `%${search}%` } }
+                        ]
+                    })
+                }
+            })
+            return res.json(users)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
+    }
+
+    async updateRoles(req, res, next) {
+        try {
+            const { idArr, role } = req.body
+            const users = await User.findAll({ where: { id: { [Op.in]: idArr } } })
+            for (let i of users) {
+                if (i.id !== req.user.id) {
+                    i.role = role
+                    await i.save()
+                }
+            }
+            return res.json(users)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e))
