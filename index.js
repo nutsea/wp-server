@@ -26,6 +26,11 @@ app.use(express.json())
 app.use(express.static(path.resolve(__dirname, 'static')))
 app.use(fileUpload({}))
 app.use('/api', router)
+app.use((err, req, res, next) => {
+    res.status(err.status || 500).json({
+        message: err.message || 'Произошла ошибка'
+    })
+})
 
 // for linux
 const server = https.createServer(options, app)
@@ -41,9 +46,24 @@ const start = async () => {
         // for linux
         server.listen(PORT, () => console.log(`Server started on port ${PORT}`))
 
-        const course = await models.Course.findAll()
-        if (course.length === 0) {
-            await models.Course.create({ id: 1, course: 15 })
+        const course = await models.Constants.findOne({ where: { name: 'course' } })
+        if (!course) {
+            await models.Constants.create({ name: 'course', value: 15 })
+        }
+
+        const standartShip = await models.Constants.findOne({ where: { name: 'standartShip' } })
+        if (!standartShip) {
+            await models.Constants.create({ name: 'standartShip', value: 2000 })
+        }
+
+        const expressShip = await models.Constants.findOne({ where: { name: 'expressShip' } })
+        if (!expressShip) {
+            await models.Constants.create({ name: 'expressShip', value: 3500 })
+        }
+
+        const fee = await models.Constants.findOne({ where: { name: 'fee' } })
+        if (!fee) {
+            await models.Constants.create({ name: 'fee', value: 1000 })
         }
     } catch (e) {
         console.log(e)
@@ -54,7 +74,9 @@ start()
 
 // telegram bot
 const { Telegraf, Markup } = require('telegraf')
-const token = '7117696688:AAGBCpe3nQEziMRibTakCm6UjDkUgG7shVs'
+
+const token = process.env.BOT_TOKEN
+
 const bot = new Telegraf(token)
 
 bot.start(async (ctx) => {
@@ -105,11 +127,12 @@ bot.on('contact', async (ctx) => {
         const phone = normalizePhoneNumber(contact.phone_number)
         const name = contact.first_name ? contact.first_name : contact.username
         const surname = contact.last_name || ''
-        const link = contact.username
+        const link = ctx.message.from.username
 
         let user = await models.User.findOne({ where: { phone } })
         if (!user) {
-            user = await models.User.create({ name, surname, phone, chat_id, link })
+            console.log('user not found')
+            user = await models.User.create({ name, surname, phone, chat_id: chat_id.toString(), link })
         } else {
             user.link = link
             await user.save()
@@ -126,7 +149,7 @@ bot.on('contact', async (ctx) => {
 
 bot.hears('Авторизоваться', async (ctx) => {
     const chat_id = ctx.chat.id
-    let user = await models.User.findOne({ where: { chat_id } })
+    let user = await models.User.findOne({ where: { chat_id: chat_id.toString() } })
     let auth = await models.Auth.findOne({ where: { chat_id: chat_id.toString() } })
     if (auth) {
         if (user) {
@@ -172,6 +195,18 @@ bot.hears('Отмена', (ctx) => {
 })
 
 bot.launch()
+
+async function sendMessageToUser(userId, message) {
+    try {
+        await bot.telegram.sendMessage(userId, message);
+    } catch (error) {
+        console.error('Error sending message:', error);
+    }
+}
+
+module.exports = {
+    sendMessageToUser,
+}
 
 console.log('Бот запущен')
 

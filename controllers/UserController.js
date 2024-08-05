@@ -1,10 +1,11 @@
 const { User } = require('../models/models')
 const ApiError = require('../error/apiError')
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
 
-const generateJwt = (id, name, phone) => {
+const generateJwt = (id, name, role) => {
     return jwt.sign(
-        { id, name, phone },
+        { id, name, role },
         process.env.SECRET_KEY,
         { expiresIn: '30d' }
     )
@@ -13,10 +14,11 @@ const generateJwt = (id, name, phone) => {
 class UserController {
     async checkUser(req, res, next) {
         try {
-            const token = generateJwt(req.user.id, req.user.name, req.user.phone)
+            const token = generateJwt(req.user.id, req.user.name, req.user.role)
             const user = await User.findOne({ where: { id: req.user.id } })
             return res.json({ token, user })
         } catch (e) {
+            console.log(e)
             return next(ApiError.forbidden(e))
         }
     }
@@ -31,6 +33,70 @@ class UserController {
             await user.save()
             return res.json(user)
         } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
+    }
+
+    async setPassword(req, res, next) {
+        try {
+            const { password } = req.body
+            const user = await User.findOne({ where: { id: req.user.id } })
+            const hashPassword = await bcrypt.hash(password, 5)
+            user.password = hashPassword
+            await user.save()
+            return res.json({ user, error: false, message: 'Пароль успешно установлен' })
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
+    }
+
+    async changePassword(req, res, next) {
+        try {
+            const { oldPass, newPass } = req.body
+            const user = await User.findOne({ where: { id: req.user.id } })
+            let comparePassword = bcrypt.compareSync(oldPass, user.password)
+            if (comparePassword) {
+                const hashPassword = await bcrypt.hash(newPass, 5)
+                user.password = hashPassword
+                await user.save()
+                return res.json({ user, error: false, message: 'Пароль успешно изменен' })
+            } else {
+                return res.json({ error: true, message: 'Неверный пароль' })
+            }
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
+    }
+
+    async login(req, res, next) {
+        try {
+            const { phone, password } = req.query
+            const user = await User.findOne({ where: { phone } })
+            if (!user) {
+                return next(ApiError.badRequest('Пользователь не найден'))
+            }
+            let comparePassword = bcrypt.compareSync(password, user.password)
+            if (!comparePassword) {
+                return next(ApiError.badRequest('Неверный пароль'))
+            }
+            const token = generateJwt(user.id, user.email, user.role)
+            return res.json({ token, user })
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
+    }
+
+    async getUser(req, res, next) {
+        try {
+            const { id } = req.query
+            const user = await User.findOne({ where: { id } })
+            return res.json(user)
+        } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e))
         }
     }

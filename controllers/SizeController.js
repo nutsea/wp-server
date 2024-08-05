@@ -9,6 +9,7 @@ class SizeController {
             const size_item = await Size.create({ id, size, price, item_uid, size_type, size_default: default_size, item_category })
             return res.json(size_item)
         } catch (error) {
+            console.log(error)
             return next(ApiError.badRequest(error.message))
         }
     }
@@ -27,6 +28,7 @@ class SizeController {
             })
             return res.json(sizes)
         } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }
@@ -44,6 +46,7 @@ class SizeController {
             })
             return res.json(price)
         } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }
@@ -55,6 +58,7 @@ class SizeController {
             const max = await Size.max('price', { where: { ...(item_category && { item_category }) } })
             return res.json({ min, max })
         } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }

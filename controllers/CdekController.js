@@ -18,13 +18,19 @@ class CdekController {
             })
             return res.json(cities)
         } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }
 
     async getPoints(req, res, next) {
-        const points = await CityPoint.findAll()
-        return res.json(points)
+        try {
+            const points = await CityPoint.findAll()
+            return res.json(points)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
     }
 
     async setPointsList(req, res, next) {
@@ -48,8 +54,9 @@ class CdekController {
                     await isExist.save()
                 }
             }
-            res.json(points)
+            return res.json(points)
         } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }

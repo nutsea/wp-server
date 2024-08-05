@@ -1,13 +1,23 @@
 const { $authCdekHost } = require('./index')
 
 const getCityList = async () => {
-    const { data } = await $authCdekHost.get('location/cities')
-    return data
+    try {
+        const { data } = await $authCdekHost.get('location/cities')
+        return data
+    } catch (e) {
+        console.log(e)
+        return e
+    }
 }
 
 const getPointsList = async (type, country_code) => {
-    const { data } = await $authCdekHost.get(`deliverypoints`, { params: { type, country_code } })
-    return data
+    try {
+        const { data } = await $authCdekHost.get(`deliverypoints`, { params: { type, country_code } })
+        return data
+    } catch (e) {
+        console.log(e)
+        return e
+    }
 }
 
 module.exports = { getCityList, getPointsList }

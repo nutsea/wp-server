@@ -5,6 +5,7 @@ const getPoizonItem = async (spuId) => {
         const { data } = await $authPoizonHost.get('productDetailWithPrice', { params: { spuId: spuId.toString() } })
         return data
     } catch (e) {
+        console.log(e)
         return e
     }
 }
@@ -14,6 +15,7 @@ const getPoizonIds = async (keyword, limit, page) => {
         const { data } = await $authPoizonHost.get('searchProducts', { params: { keyword, limit, page } })
         return data
     } catch (e) {
+        console.log(e)
         return e
     }
 }

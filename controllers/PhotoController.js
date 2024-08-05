@@ -14,7 +14,20 @@ class PhotoController {
             const photo = await Photo.create({ img: fileName, item_uid })
             return res.json(photo)
         } catch (e) {
-            next(ApiError.badRequest(e.message))
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async delete(req, res, next) {
+        try {
+            const { id } = req.query
+            const photo = await Photo.findOne({ where: { id } })
+            await photo.destroy()
+            return res.json({ message: 'Photo deleted' })
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
         }
     }
 }

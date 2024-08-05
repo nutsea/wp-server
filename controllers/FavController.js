@@ -8,6 +8,7 @@ class FavController {
             const item = await Fav.create({ item_uid, client_id })
             return res.json(item)
         } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }
@@ -18,6 +19,7 @@ class FavController {
             const fav = await Fav.findAll({ where: { client_id } })
             return res.json(fav)
         } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }
@@ -29,6 +31,7 @@ class FavController {
             await item.destroy()
             return res.json(item)
         } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }

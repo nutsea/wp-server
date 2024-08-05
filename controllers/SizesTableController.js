@@ -8,6 +8,7 @@ class SizesTableController {
             const size_item = await SizesTable.create({ id, size_type, size_default, size, item_uid })
             return res.json(size_item)
         } catch (error) {
+            console.log(error)
             return next(ApiError.badRequest(error.message))
         }
     }

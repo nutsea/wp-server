@@ -14,14 +14,20 @@ class StoryController {
             const story = await Story.create({ img: fileName, type })
             return res.json(story)
         } catch (e) {
-            next(ApiError.badRequest(e.message))
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
         }
     }
 
-    async getAll(req, res) {
-        const { type } = req.query
-        const stories = await Story.findAll({ where: { type } })
-        return res.json(stories)
+    async getAll(req, res, next) {
+        try {
+            const { type } = req.query
+            const stories = await Story.findAll({ where: { type } })
+            return res.json(stories)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
     }
 }
 

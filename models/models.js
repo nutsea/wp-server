@@ -22,6 +22,12 @@ const Size = sequelize.define('sizes', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     size: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.FLOAT, allowNull: false },
+    price_0: { type: DataTypes.FLOAT },
+    price_2: { type: DataTypes.FLOAT },
+    price_3: { type: DataTypes.FLOAT },
+    delivery_0: { type: DataTypes.STRING },
+    delivery_2: { type: DataTypes.STRING },
+    delivery_3: { type: DataTypes.STRING },
     item_uid: { type: DataTypes.STRING, allowNull: false },
     size_type: { type: DataTypes.STRING, allowNull: false, defaultValue: 'EU' },
     size_default: { type: DataTypes.STRING },
@@ -34,9 +40,10 @@ const User = sequelize.define('user', {
     surname: { type: DataTypes.STRING },
     phone: { type: DataTypes.STRING },
     email: { type: DataTypes.STRING },
-    chat_id: { type: DataTypes.INTEGER },
+    chat_id: { type: DataTypes.STRING },
     link: { type: DataTypes.STRING },
     role: { type: DataTypes.STRING, allowNull: false, defaultValue: 'client' },
+    password: { type: DataTypes.STRING },
 })
 
 const Fav = sequelize.define('favs', {
@@ -67,8 +74,8 @@ const Order = sequelize.define('orders', {
     address: { type: DataTypes.STRING, allowNull: false },
     ship_type: { type: DataTypes.STRING, defaultValue: 'point' }, // point, home
     track: { type: DataTypes.STRING, defaultValue: '' },
-    cargo_cost: { type: DataTypes.FLOAT, defaultValue: 0 },
-    sdek_cost: { type: DataTypes.FLOAT, defaultValue: 0 },
+    cargo_cost: { type: DataTypes.FLOAT },
+    sdek_cost: { type: DataTypes.FLOAT },
     cargo_track: { type: DataTypes.STRING, defaultValue: '' },
     sdek_track: { type: DataTypes.STRING, defaultValue: '' },
     delivery_cost: { type: DataTypes.FLOAT, defaultValue: 0 },
@@ -77,14 +84,19 @@ const Order = sequelize.define('orders', {
     is_split: { type: DataTypes.BOOLEAN, defaultValue: false },
     first_pay: { type: DataTypes.FLOAT, defaultValue: 0 },
     second_pay: { type: DataTypes.FLOAT, defaultValue: 0 },
+    first_paid: { type: DataTypes.BOOLEAN, defaultValue: false },
+    second_paid: { type: DataTypes.BOOLEAN, defaultValue: false },
     paid: { type: DataTypes.FLOAT, defaultValue: 0 },
     course: { type: DataTypes.FLOAT, allowNull: false },
     fee: { type: DataTypes.FLOAT, allowNull: false }, // комиссия
     cost: { type: DataTypes.FLOAT, allowNull: false },
     discount_cost: { type: DataTypes.FLOAT, defaultValue: 0 },
+    paid: { type: DataTypes.FLOAT, defaultValue: 0 },
     // скидка
     discount: { type: DataTypes.INTEGER, defaultValue: 0 },
     promo_code: { type: DataTypes.STRING, defaultValue: '' },
+    // отзыв
+    can_review: { type: DataTypes.BOOLEAN, defaultValue: true },
 })
 
 const OrderItem = sequelize.define('order_items', {
@@ -138,9 +150,10 @@ const CityPoint = sequelize.define('city_points', {
     address: { type: DataTypes.STRING, allowNull: false },
 })
 
-const Course = sequelize.define('course', {
+const Constants = sequelize.define('constants', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    course: { type: DataTypes.FLOAT, allowNull: false },
+    name: { type: DataTypes.STRING, allowNull: false },
+    value: { type: DataTypes.FLOAT, allowNull: false },
 })
 
 User.hasMany(Fav, { foreignKey: 'client_id' })
@@ -172,5 +185,5 @@ module.exports = {
     Promo,
     Story,
     CityPoint,
-    Course
+    Constants
 }

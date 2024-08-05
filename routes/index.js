@@ -13,7 +13,7 @@ const sizeRouter = require('./SizeRouter')
 const storyRouter = require('./StoryRouter')
 const userRouter = require('./UserRouter')
 const cdekRouter = require('./CdekRouter')
-const courseRouter = require('./CourseRouter')
+const constantsRouter = require('./ConstantsRouter')
 
 router.use('/auth', authRouter)
 router.use('/cart', cartRouter)
@@ -28,6 +28,6 @@ router.use('/size', sizeRouter)
 router.use('/story', storyRouter)
 router.use('/user', userRouter)
 router.use('/cdek', cdekRouter)
-router.use('/course', courseRouter)
+router.use('/constants', constantsRouter)
 
 module.exports = router
