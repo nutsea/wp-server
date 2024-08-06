@@ -89,12 +89,14 @@ class ItemController {
 
     async createBySpuId(req, res, next) {
         try {
-            const { spuIdArr, category } = req.body
+            const { spuIdArr, category, timeElapsed } = req.body
+            console.log(spuIdArr, category, timeElapsed)
             let items = []
             let error = false
             for (let i of spuIdArr) {
                 try {
-                    await getPoizonItem(i).then(async data => {
+                    await getPoizonItem(i, timeElapsed).then(async data => {
+                        console.log(data)
                         try {
                             const isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                             if (!isItem) {
@@ -148,17 +150,17 @@ class ItemController {
                                 }
                             }
                         } catch (e) {
-                            console.log(e)
+                            // console.log(e)
                         }
                     })
                 } catch (e) {
-                    console.log(e)
+                    // console.log(e)
                     error = true
                 }
             }
             return res.json({ items, error })
         } catch (e) {
-            console.log(e)
+            // console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }
@@ -176,11 +178,11 @@ class ItemController {
 
     async checkCost(req, res, next) {
         try {
-            const { spuIdArr } = req.query
+            const { spuIdArr, timeElapsed } = req.query
             let ids = JSON.parse(spuIdArr)
             let sizes = []
             for (let i of ids) {
-                await getPoizonItem(i).then(async data => {
+                await getPoizonItem(i, timeElapsed).then(async data => {
                     let list = data.sizeDto.sizeInfo.sizeTemplate.list
                     for (let j of list) {
                         if (j.sizeKey === '适合脚长') j.sizeKey = 'SM'

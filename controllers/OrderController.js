@@ -194,7 +194,7 @@ class OrderController {
     async getOrderReport(req, res, next) {
         try {
             const { id, type } = req.query
-            const report = await OrderPhoto.findOne({ where: { id, type } })
+            const report = await OrderPhoto.findAll({ where: { order_id: id, type } })
             return res.json(report)
         } catch (e) {
             console.log(e)
