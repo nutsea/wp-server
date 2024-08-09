@@ -36,7 +36,7 @@ const Size = sequelize.define('sizes', {
 
 const User = sequelize.define('user', {
     id: { type: DataTypes.UUID, defaultValue: uuidv4, primaryKey: true, allowNull: false, unique: true },
-    name: { type: DataTypes.STRING, allowNull: false },
+    name: { type: DataTypes.STRING },
     surname: { type: DataTypes.STRING },
     phone: { type: DataTypes.STRING },
     email: { type: DataTypes.STRING },
@@ -64,6 +64,7 @@ const Order = sequelize.define('orders', {
     nickname: { type: DataTypes.STRING, defaultValue: '' },
     name: { type: DataTypes.STRING, allowNull: false },
     social_media: { type: DataTypes.STRING, allowNull: false },
+    social_media_type: { type: DataTypes.STRING, allowNull: false, defaultValue: 'VK' },
     status: { type: DataTypes.INTEGER, defaultValue: 0 },
     manager: { type: DataTypes.STRING, defaultValue: '' },
     comment: { type: DataTypes.STRING, defaultValue: '' },

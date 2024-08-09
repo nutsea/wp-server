@@ -12,7 +12,7 @@ module.exports = function (req, res, next) {
         const decoded = jwt.verify(token, process.env.SECRET_KEY)
         req.user = decoded
 
-        if (req.user.role !== 'admin' && req.user.role !== 'main') {
+        if (req.user.role !== 'admin' && req.user.role !== 'main' && req.user.role !== 'dev') {
             return res.status(403).json({message: 'Недостаточно прав'})
         }
 

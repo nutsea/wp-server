@@ -54,7 +54,7 @@ class CdekController {
                     await isExist.save()
                 }
             }
-            return res.json(points)
+            // return res.json(points)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))

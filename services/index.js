@@ -15,6 +15,13 @@ const $authPoizonHost = axios.create({
     baseURL: process.env.POIZON_URL
 })
 
+const poizonInterceptor = async config => {
+    config.headers.apiKey = process.env.POIZON_API_KEY
+    return config
+}
+
+$authPoizonHost.interceptors.request.use(poizonInterceptor)
+
 const cdekInterceptor = async config => {
     await getToken().then(token => {
         config.headers.authorization = `Bearer ${token}`
@@ -24,13 +31,6 @@ const cdekInterceptor = async config => {
 }
 
 $authCdekHost.interceptors.request.use(cdekInterceptor)
-
-const poizonInterceptor = async config => {
-    config.headers.apiKey = process.env.POIZON_API_KEY
-    return config
-}
-
-$authPoizonHost.interceptors.request.use(poizonInterceptor)
 
 const getToken = async () => {
     const params = new URLSearchParams()

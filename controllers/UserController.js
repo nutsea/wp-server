@@ -15,22 +15,26 @@ const generateJwt = (id, name, role) => {
 class UserController {
     async checkUser(req, res, next) {
         try {
-            const token = generateJwt(req.user.id, req.user.name, req.user.role)
             const user = await User.findOne({ where: { id: req.user.id } })
+            // const token = generateJwt(req.user.id, req.user.phone, req.user.role)
+            const token = generateJwt(req.user.id, req.user.chat_id, user.role)
             return res.json({ token, user })
         } catch (e) {
-            console.log(e)
+            // console.log(e)
             return next(ApiError.forbidden(e))
         }
     }
 
     async update(req, res, next) {
         try {
-            const { name, surname, email } = req.body
+            const { name, surname, phone } = req.body
             const user = await User.findOne({ where: { id: req.user.id } })
             if (name) user.name = name
+            else user.name = ''
             if (surname) user.surname = surname
-            if (email) user.email = email
+            else user.surname = ''
+            if (phone && phone.length === 11) user.phone = phone
+            else user.phone = ''
             await user.save()
             return res.json(user)
         } catch (e) {
@@ -83,7 +87,7 @@ class UserController {
             if (!comparePassword) {
                 return next(ApiError.badRequest('Неверный пароль'))
             }
-            const token = generateJwt(user.id, user.email, user.role)
+            const token = generateJwt(user.id, user.chat_id, user.role)
             return res.json({ token, user })
         } catch (e) {
             console.log(e)
@@ -130,7 +134,7 @@ class UserController {
             const { idArr, role } = req.body
             const users = await User.findAll({ where: { id: { [Op.in]: idArr } } })
             for (let i of users) {
-                if (i.id !== req.user.id) {
+                if (i.id !== req.user.id && i.phone !== '79172682101') {
                     i.role = role
                     await i.save()
                 }

@@ -34,7 +34,7 @@ class OrderController {
             const { name, social_media, checked_price, recipient, phone, address, ship_type, delivery_cost, is_split, course, fee, cost, discount_cost, discount, promo_code, items } = req.body
             const first_pay = is_split ? Math.ceil(cost / 2) : cost
             const second_pay = is_split ? Math.ceil(cost / 2) : 0
-            const order = await Order.create({ name, social_media, checked_price, recipient, phone, address, ship_type, delivery_cost: delivery_cost * items.length, is_split, first_pay, second_pay, course, fee: fee * items.length, cost, discount_cost, discount, promo_code, client_id: req.user.id })
+            const order = await Order.create({ name, social_media, social_media_type: 'Telegram', checked_price, recipient, phone, address, ship_type, delivery_cost: delivery_cost * items.length, is_split, first_pay, second_pay, course, fee: fee * items.length, cost, discount_cost, discount, promo_code, client_id: req.user.id })
             for (let i of items) {
                 await Photo.findOne({ where: { item_uid: i.item_uid } }).then(async data => {
                     await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
@@ -49,7 +49,7 @@ class OrderController {
                             size: i.size,
                             ship: i.ship,
                             cny_cost: i.cny_cost,
-                            rub_cost: i.rub_cost,
+                            rub_cost: Math.ceil(i.rub_cost),
                             order_id: order.id,
                             fee: i.fee,
                             delivery_cost: i.delivery_cost
@@ -68,10 +68,10 @@ class OrderController {
 
     async createByAdmin(req, res, next) {
         try {
-            const { name, social_media, recipient, phone, address, ship_type, is_split, first_pay, second_pay, first_paid, second_paid, paid, course, cost, discount, promo_code, comment, can_review, status, items } = req.body
+            const { name, social_media, recipient, phone, address, ship_type, is_split, first_pay, second_pay, first_paid, second_paid, paid, course, cost, discount, promo_code, comment, can_review, status, items, social_media_type } = req.body
             let fee = items.map(i => i.fee).reduce((a, b) => a + b)
             let delivery_cost = items.map(i => i.delivery_cost).reduce((a, b) => a + b)
-            const order = await Order.create({ name, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid, course, fee: Number(fee), cost: Number(cost), discount: Number(discount), promo_code, comment, can_review, status })
+            const order = await Order.create({ name, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid, course, fee: Number(fee), cost: Number(cost), discount: Number(discount), promo_code, comment, can_review, status, social_media_type })
             for (let i of items) {
                 await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
                     await OrderItem.create({
@@ -82,7 +82,7 @@ class OrderController {
                         size: i.size,
                         ship: i.ship,
                         cny_cost: Number(i.cny_cost),
-                        rub_cost: Number(i.rub_cost),
+                        rub_cost: Math.ceil(Number(i.rub_cost)),
                         order_id: order.id,
                         fee: Number(i.fee),
                         delivery_cost: Number(i.delivery_cost)
@@ -419,28 +419,39 @@ class OrderController {
                 item.status = statuses[i] ? statuses[i] : item.status
                 item.order_num = orderNums[i] ? orderNums[i] : item.order_num
                 item.track = trackNums[i] ? trackNums[i] : item.track
-                const order = await Order.findOne({ where: { id: item.order_id } })
-                if (pricesRUB[i]) {
-                    order.cost = Number(order.cost) - Number(item.rub_cost) + Number(pricesRUB[i])
-                }
-                if (pricesCNY[i]) {
-                    order.discount_cost = Number(order.discount_cost) - Number(item.rub_cost) + Number(pricesRUB[i])
-                }
-                if (fees[i]) {
-                    order.fee = Number(order.fee) - Number(item.fee) + Number(fees[i])
-                    order.cost = Number(order.cost) - Number(item.fee) + Number(fees[i])
-                    order.discount_cost = Number(order.discount_cost) - Number(item.fee) + Number(fees[i])
-                }
-                if (deliveries[i]) {
-                    order.delivery_cost = Number(order.delivery_cost) - Number(item.delivery_cost) + Number(deliveries[i])
-                    order.cost = Number(order.cost) - Number(item.delivery_cost) + Number(deliveries[i])
-                    order.discount_cost = Number(order.discount_cost) - Number(item.delivery_cost) + Number(deliveries[i])
-                }
+                // const order = await Order.findOne({ where: { id: item.order_id } })
+                // if (pricesRUB[i]) {
+                //     order.cost = Number(order.cost) - Number(item.rub_cost) + Number(pricesRUB[i])
+                //     order.cost = Math.ceil(order.cost)
+                // }
+                // if (pricesCNY[i]) {
+                //     order.discount_cost = Number(order.discount_cost) - Number(item.rub_cost) + Number(pricesRUB[i])
+                //     order.discount_cost = Math.ceil(order.discount_cost)
+                // }
+                // if (fees && fees[i]) {
+                //     order.fee = Number(order.fee) - Number(item.fee) + Number(fees[i])
+                //     order.fee = Math.ceil(order.fee)
+                //     order.cost = Number(order.cost) - Number(item.fee) + Number(fees[i])
+                //     order.cost = Math.ceil(order.cost)
+                //     order.discount_cost = Number(order.discount_cost) - Number(item.fee) + Number(fees[i])
+                //     order.discount_cost = Math.ceil(order.discount_cost)
+                // }
+                // if (deliveries && deliveries[i]) {
+                //     order.delivery_cost = Number(order.delivery_cost) - Number(item.delivery_cost) + Number(deliveries[i])
+                //     order.delivery_cost = Math.ceil(order.delivery_cost)
+                //     order.cost = Number(order.cost) - Number(item.delivery_cost) + Number(deliveries[i])
+                //     order.cost = Math.ceil(order.cost)
+                //     order.discount_cost = Number(order.discount_cost) - Number(item.delivery_cost) + Number(deliveries[i])
+                //     order.discount_cost = Math.ceil(order.discount_cost)
+                // }
                 item.cny_cost = pricesCNY[i] ? pricesCNY[i] : item.cny_cost
                 item.rub_cost = pricesRUB[i] ? pricesRUB[i] : item.rub_cost
-                item.fee = fees[i] ? fees[i] : item.fee
-                item.delivery_cost = deliveries[i] ? deliveries[i] : item.delivery_cost
-                await order.save()
+                item.rub_cost = Math.ceil(item.rub_cost)
+                item.fee = fees && fees[i] ? fees[i] : item.fee
+                item.fee = Math.ceil(item.fee)
+                item.delivery_cost = deliveries && deliveries[i] ? deliveries[i] : item.delivery_cost
+                item.delivery_cost = Math.ceil(item.delivery_cost)
+                // await order.save()
                 await item.save()
             }
             return res.json({ message: 'Позиции обновлены' })
@@ -452,7 +463,7 @@ class OrderController {
 
     async updateOrder(req, res, next) {
         try {
-            const { id, status, recipient, phone, ship_type, comment, address, track, cdekTrack, dimensions, cargo_cost, sdek_cost, first_pay, second_pay, firstPaid, secondPaid, paid, canReview } = req.body
+            const { id, status, recipient, phone, ship_type, comment, address, track, cdekTrack, dimensions, cargo_cost, sdek_cost, first_pay, second_pay, firstPaid, secondPaid, paid, canReview, fee, cost, social_media_type, social_media, delivery_cost } = req.body
             const order = await Order.findOne({ where: { id } })
             order.recipient = recipient ? recipient : order.recipient
             order.phone = phone ? phone : order.phone
@@ -470,6 +481,12 @@ class OrderController {
             order.second_paid = secondPaid !== undefined ? secondPaid : order.second_paid
             order.paid = paid ? paid : order.paid
             order.can_review = canReview !== undefined ? canReview : order.can_review
+            order.fee = fee ? fee : order.fee
+            order.cost = cost ? cost : order.cost
+            order.discount_cost = cost ? cost - order.discount : order.discount_cost
+            order.social_media_type = social_media_type ? social_media_type : order.social_media_type
+            order.social_media = social_media ? social_media : order.social_media
+            order.delivery_cost = delivery_cost ? delivery_cost : order.delivery_cost
             let allow = true
 
             const orderItems = await OrderItem.findAll({ where: { order_id: id } })
@@ -487,6 +504,7 @@ class OrderController {
                             bot.telegram.sendMessage(client.chat_id, messages[status])
                         }
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -505,6 +523,7 @@ class OrderController {
                             bot.telegram.sendMessage(client.chat_id, messages[status])
                         }
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -521,6 +540,7 @@ class OrderController {
                     if (orderPhotosBuy.length === 0) allow = false
                     if (allow) {
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -541,6 +561,7 @@ class OrderController {
                             bot.telegram.sendMessage(client.chat_id, messages[status])
                         }
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -562,6 +583,7 @@ class OrderController {
                     if (orderPhotosStock.length === 0) allow = false
                     if (allow) {
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -587,6 +609,7 @@ class OrderController {
                             bot.telegram.sendMessage(client.chat_id, messages[status])
                         }
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -612,6 +635,7 @@ class OrderController {
                             bot.telegram.sendMessage(client.chat_id, messages[status])
                         }
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -637,6 +661,7 @@ class OrderController {
                             bot.telegram.sendMessage(client.chat_id, messages[status])
                         }
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -666,6 +691,7 @@ class OrderController {
                             }
                         }
                         order.status = status
+                        order.checked_price = true
                         if (!order.manager) order.manager = req.user.id
                     }
                     break
@@ -709,9 +735,13 @@ class OrderController {
             const order = await Order.findOne({ where: { id } })
             const item = await OrderItem.create({ item_uid, img, name, category, size, ship, cny_cost, rub_cost, order_id: order.id })
             order.delivery_cost = Number(order.delivery_cost) + Number(delivery_cost)
+            order.delivery_cost = Math.ceil(order.delivery_cost)
             order.fee = Number(order.fee) + Number(fee)
+            order.fee = Math.ceil(order.fee)
             order.cost = Number(order.cost) + Number(rub_cost) + Number(delivery_cost) + Number(fee)
+            order.cost = Math.ceil(order.cost)
             order.discount_cost = Number(order.discount_cost) + Number(rub_cost) + Number(delivery_cost) + Number(fee)
+            order.discount_cost = Math.ceil(order.discount_cost)
             await order.save()
             return res.json(item)
         } catch (e) {
