@@ -5,6 +5,7 @@ const adminMiddleware = require('../middleware/adminMiddleware')
 
 router.post('/', itemController.create)
 router.post('/spu', adminMiddleware, itemController.createBySpuId)
+router.put('/updatebrandmodel', adminMiddleware, itemController.updateBrandAndModel)
 router.get('/spu', adminMiddleware, itemController.getSpuIds)
 router.get('/cost', itemController.checkCost)
 router.get('/all', itemController.getAll)

@@ -84,6 +84,7 @@ bot.start(async (ctx) => {
     try {
         const code = ctx.payload
         const auth = await models.Auth.findOne({ where: { code } })
+        console.log(1, code, auth)
         if (auth) {
             const user = await models.User.findOne({ where: { chat_id: ctx.chat.id.toString() } })
             if (user) {

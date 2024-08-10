@@ -89,8 +89,7 @@ class ItemController {
 
     async createBySpuId(req, res, next) {
         try {
-            const { spuIdArr, category, timeElapsed } = req.body
-            console.log(spuIdArr, category, timeElapsed)
+            const { spuIdArr, category, timeElapsed, brand, model } = req.body
             let items = []
             let error = false
             for (let i of spuIdArr) {
@@ -100,7 +99,8 @@ class ItemController {
                         try {
                             const isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                             if (!isItem) {
-                                const item = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand: filterString(data.brandRootInfo.brandItemList[0].brandName), model: filterString(data.detail.structureTitle), orders: 0 })
+                                // const item = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand: filterString(data.brandRootInfo.brandItemList[0].brandName), model: filterString(data.detail.structureTitle), orders: 0 })
+                                const item = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
                                 items.push(item)
                             }
                             for (let j of data.image.spuImage.images) {
@@ -151,7 +151,7 @@ class ItemController {
                                             const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                             for (let k of list) {
                                                 // if (k.sizeValue[defaultIndex] && k.sizeValue[defaultIndex] !== defaultSize && k.sizeKey) {
-                                                    if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
+                                                if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                                     await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category })
                                                 }
                                             }
@@ -171,6 +171,26 @@ class ItemController {
             return res.json({ items, error })
         } catch (e) {
             // console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async updateBrandAndModel(req, res, next) {
+        try {
+            const { spuIdArr, brand, model } = req.body
+            const items = []
+            for (let i of spuIdArr) {
+                const item = await Item.findOne({ where: { item_uid: i.toString() } })
+                if (item) {
+                    item.brand = brand
+                    item.model = model
+                    await item.save()
+                    items.push(item)
+                }
+            }
+            return res.json(items)
+        } catch (e) {
+            console.log(e)
             return next(ApiError.badRequest(e.message))
         }
     }
@@ -528,6 +548,28 @@ class ItemController {
                 }
             }
             return res.json(brands)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async getBrands(req, res, next) {
+        try {
+            const { category } = req.query
+            let brands = await Item.findAll({ attributes: ['brand'], group: ['brand'], where: { ...(category && { category }) } })
+            return res.json(brands)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async getModels(req, res, next) {
+        try {
+            const { brand, category } = req.query
+            let models = await Item.findAll({ attributes: ['model'], group: ['model'], where: { brand, ...(category && { category }) } })
+            return res.json(models)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
