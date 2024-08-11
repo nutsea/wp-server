@@ -1,5 +1,6 @@
 const { Size } = require('../models/models')
 const ApiError = require('../error/apiError')
+const { Op } = require('sequelize')
 
 class SizeController {
     async create(req, res, next) {
@@ -14,15 +15,40 @@ class SizeController {
         }
     }
 
+    // async getAll(req, res, next) {
+    //     try {
+    //         const { size_type, item_category } = req.query
+    //         const sizes = await Size.findAll({
+    //             attributes: ['size'],
+    //             where: {
+    //                 size_type,
+    //                 ...(item_category && { item_category })
+    //             },
+    //             group: ['size'],
+    //             raw: true
+    //         })
+    //         return res.json(sizes)
+    //     } catch (e) {
+    //         console.log(e)
+    //         return next(ApiError.badRequest(e.message))
+    //     }
+    // }
+
     async getAll(req, res, next) {
         try {
             const { size_type, item_category } = req.query
+            const whereClause = {
+                size_type,
+                ...(item_category && { item_category })
+            }
+
+            if (size_type === 'EU') {
+                whereClause.brand = { [Op.ne]: 'Adidas' }
+            }
+
             const sizes = await Size.findAll({
                 attributes: ['size'],
-                where: {
-                    size_type,
-                    ...(item_category && { item_category })
-                },
+                where: whereClause,
                 group: ['size'],
                 raw: true
             })

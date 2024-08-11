@@ -31,7 +31,8 @@ const Size = sequelize.define('sizes', {
     item_uid: { type: DataTypes.STRING, allowNull: false },
     size_type: { type: DataTypes.STRING, allowNull: false, defaultValue: 'EU' },
     size_default: { type: DataTypes.STRING },
-    item_category: { type: DataTypes.STRING }
+    item_category: { type: DataTypes.STRING },
+    brand: { type: DataTypes.STRING },
 })
 
 const User = sequelize.define('user', {

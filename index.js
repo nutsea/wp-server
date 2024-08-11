@@ -11,13 +11,16 @@ const fs = require('fs')
 const { v4: uuidv4 } = require('uuid')
 const cron = require('node-cron')
 const { setPointsList } = require('./controllers/CdekController')
+const os = require('os')
 
-const PORT = process.env.PORT || 5000
+const PORT = os.platform() === 'linux' ? (process.env.PORT_LINUX || 5001) : (process.env.PORT || 5000)
 
-// for linux
-const options = {
-    key: fs.readFileSync('/etc/letsencrypt/live/wearpoizon.workinit.ru/privkey.pem'),
-    cert: fs.readFileSync('/etc/letsencrypt/live/wearpoizon.workinit.ru/cert.pem')
+let options
+if (os.platform() === 'linux') {
+    options = {
+        key: fs.readFileSync('/etc/letsencrypt/live/wearpoizon.workinit.ru/privkey.pem'),
+        cert: fs.readFileSync('/etc/letsencrypt/live/wearpoizon.workinit.ru/cert.pem')
+    }
 }
 
 const app = express()
@@ -32,7 +35,6 @@ app.use((err, req, res, next) => {
     })
 })
 
-// for linux
 const server = https.createServer(options, app)
 
 const start = async () => {
@@ -40,11 +42,11 @@ const start = async () => {
         await sequelize.authenticate()
         await sequelize.sync()
 
-        // not for linux
-        // app.listen(PORT, () => console.log(`Server started on port ${PORT}`))
-
-        // for linux
-        server.listen(PORT, () => console.log(`Server started on port ${PORT}`))
+        if (os.platform() === 'linux') {
+            server.listen(PORT, () => console.log(`Server started on port ${PORT} (Linux)`))
+        } else {
+            app.listen(PORT, () => console.log(`Server started on port ${PORT} (Non-Linux)`))
+        }
 
         const course = await models.Constants.findOne({ where: { name: 'course' } })
         if (!course) {
@@ -74,9 +76,15 @@ start()
 
 // telegram bot
 const { Telegraf, Markup } = require('telegraf')
-const { where } = require('sequelize')
+// const { where } = require('sequelize')
 
-const token = process.env.BOT_TOKEN
+let token
+
+if (os.platform() === 'linux') {
+    token = process.env.BOT_TOKEN_LINUX
+} else {
+    token = process.env.BOT_TOKEN
+}
 
 const bot = new Telegraf(token)
 
