@@ -3,7 +3,7 @@ const { $authPoizonHost } = require('./index')
 const getPoizonItem = async (spuId, timeElapsed) => {
     try {
         if (timeElapsed) {
-            const { data } = await $authPoizonHost.get('productDetailWithPrice', { params: { spuId: spuId.toString(), timeElapsed: Number(timeElapsed) } })
+            const { data } = await $authPoizonHost.get('productDetailWithPrice', { params: { spuId: spuId.toString(), timeElapsed: Number(timeElapsed) }, headers: { timeElapsed } })
             return data
         } else {
             const { data } = await $authPoizonHost.get('productDetailWithPrice', { params: { spuId: spuId.toString() } })
@@ -15,10 +15,15 @@ const getPoizonItem = async (spuId, timeElapsed) => {
     }
 }
 
-const getPoizonIds = async (keyword, limit, page) => {
+const getPoizonIds = async (keyword, limit, page, timeElapsed) => {
     try {
-        const { data } = await $authPoizonHost.get('searchProducts', { params: { keyword, limit, page } })
-        return data
+        if (timeElapsed) {
+            const { data } = await $authPoizonHost.get('searchProducts', { params: { keyword, limit, page }, headers: { timeElapsed } })
+            return data
+        } else {
+            const { data } = await $authPoizonHost.get('searchProducts', { params: { keyword, limit, page } })
+            return data
+        }
     } catch (e) {
         console.log(e)
         return e

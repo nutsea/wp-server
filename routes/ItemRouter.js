@@ -9,6 +9,7 @@ router.put('/updatebrandmodel', adminMiddleware, itemController.updateBrandAndMo
 router.get('/spu', adminMiddleware, itemController.getSpuIds)
 router.get('/cost', itemController.checkCost)
 router.get('/all', itemController.getAll)
+router.get('/alladmin', itemController.getAllAdmin)
 router.get('/popular', itemController.getPopular)
 router.get('/one', itemController.getOne)
 router.get('/spuone', itemController.getOneBySpu)

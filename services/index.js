@@ -1,4 +1,5 @@
 const axios = require('axios')
+const { config } = require('dotenv')
 
 const $cdekHost = axios.create({
     baseURL: process.env.CDEK_URL,
@@ -15,8 +16,11 @@ const $authPoizonHost = axios.create({
     baseURL: process.env.POIZON_URL
 })
 
-const poizonInterceptor = async config => {
+const poizonInterceptor = async (config, timeElapsed) => {
     config.headers.apiKey = process.env.POIZON_API_KEY
+    if (timeElapsed) {
+        config.params.timeElapsed = timeElapsed
+    }
     return config
 }
 
