@@ -71,7 +71,7 @@ class OrderController {
             const { name, social_media, recipient, phone, address, ship_type, is_split, first_pay, second_pay, first_paid, second_paid, paid, course, cost, discount, promo_code, comment, can_review, status, items, social_media_type } = req.body
             let fee = items.map(i => i.fee).reduce((a, b) => a + b)
             let delivery_cost = items.map(i => i.delivery_cost).reduce((a, b) => a + b)
-            const order = await Order.create({ name, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid, course, fee: Number(fee), cost: Number(cost), discount: Number(discount), promo_code, comment, can_review, status, social_media_type })
+            const order = await Order.create({ name, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount: Number(discount), promo_code, comment, can_review, status, social_media_type })
             for (let i of items) {
                 await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
                     await OrderItem.create({
@@ -82,7 +82,7 @@ class OrderController {
                         size: i.size,
                         ship: i.ship,
                         cny_cost: Number(i.cny_cost),
-                        rub_cost: Math.ceil(Number(i.rub_cost)),
+                        rub_cost: Math.ceil(Number(i.cny_cost) * course),
                         order_id: order.id,
                         fee: Number(i.fee),
                         delivery_cost: Number(i.delivery_cost)
@@ -500,7 +500,7 @@ class OrderController {
                     if (order.paid === 0) allow = false
                     if (!order.delivery_cost) allow = false
                     if (allow) {
-                        if (order.status !== status) {
+                        if (order.status !== status && client && client.chat_id) {
                             bot.telegram.sendMessage(client.chat_id, messages[status])
                         }
                         order.status = status
