@@ -8,6 +8,11 @@ function filterString(str) {
     return str.replace(regex, '')
 }
 
+function filterSize(str) {
+    const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F]/g
+    return str.replace(regex, '')
+}
+
 function translateToSM(str) {
     if (str === "适合脚长") return "SM"
 }
@@ -75,6 +80,17 @@ function formatSkus(skus) {
     return { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 }
 }
 
+const validProperty = (data) => {
+    if (data && data.properties && data.properties[0] && data.properties[0].saleProperty && data.properties[0].saleProperty.value) {
+        for (let i of data.properties) {
+            if (i.saleProperty && filterSize(i.saleProperty.value)) {
+                return i.saleProperty.value
+            }
+        }
+    }
+    return null
+}
+
 class ItemController {
     async create(req, res, next) {
         try {
@@ -113,9 +129,9 @@ class ItemController {
                                 j.sizeValue = convertStringToArray(j.sizeValue)
                             }
                             for (let j = 0; j < data.skus.length; j++) {
-                                if (data.skus[j] && data.skus[j].properties[0] && data.skus[j].properties[0].saleProperty && data.skus[j].properties[0].saleProperty.value) {
+                                if (data.skus[j] && validProperty(data.skus[j])) {
                                     const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
-                                    const defaultSize = data.skus[j].properties[0].saleProperty.value
+                                    const defaultSize = validProperty(data.skus[j])
                                     const sameSizes = await Size.findAll({ where: { size_default: defaultSize, item_uid: i.toString() } })
                                     if (sameSizes && sameSizes.length > 0) {
                                         for (let k of sameSizes) {
@@ -197,6 +213,22 @@ class ItemController {
         }
     }
 
+    async clearNonValidSizes(req, res, next) {
+        try {
+            const { spuIdArr } = req.query
+            const sizes = await Size.findAll({ where: { item_uid: { [Op.in]: spuIdArr } } })
+            for (let i of sizes) {
+                if (!filterSize(i.size)) {
+                    await i.destroy()
+                }
+            }
+            return res.json(sizes)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
     async getSpuIds(req, res, next) {
         try {
             const { keyword, limit, page, timeElapsed } = req.query
@@ -230,9 +262,9 @@ class ItemController {
                             console.log(j.sizeKey)
                         }
                         for (let j = 0; j < data.skus.length; j++) {
-                            if (data.skus[j] && data.skus[j].properties[0] && data.skus[j].properties[0].saleProperty && data.skus[j].properties[0].saleProperty.value) {
+                            if (data.skus[j] && validProperty(data.skus[j])) {
                                 const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
-                                const defaultSize = data.skus[j].properties[0].saleProperty.value
+                                const defaultSize = validProperty(data.skus[j])
                                 const sameSizes = await Size.findAll({ where: { size_default: defaultSize, item_uid: i.toString() } })
                                 if (sameSizes && sameSizes.length > 0) {
                                     for (let k of sameSizes) {
