@@ -83,7 +83,7 @@ function formatSkus(skus) {
 const validProperty = (data) => {
     if (data && data.properties && data.properties[0] && data.properties[0].saleProperty && data.properties[0].saleProperty.value) {
         for (let i of data.properties) {
-            if (i.saleProperty && filterSize(i.saleProperty.value)) {
+            if (i.saleProperty && filterSize(i.saleProperty.value) === i.saleProperty.value) {
                 return i.saleProperty.value
             }
         }
@@ -218,7 +218,7 @@ class ItemController {
             const { spuIdArr } = req.query
             const sizes = await Size.findAll({ where: { item_uid: { [Op.in]: spuIdArr } } })
             for (let i of sizes) {
-                if (!filterSize(i.size)) {
+                if (!filterSize(i.size) || filterSize(i.size) !== i.size) {
                     await i.destroy()
                 }
             }
