@@ -9,8 +9,8 @@ function filterString(str) {
 }
 
 function filterSize(str) {
-    const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F]/g
-    return str.replace(regex, '')
+    const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F.]/g;
+    return str.replace(regex, '');
 }
 
 function translateToSM(str) {
