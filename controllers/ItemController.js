@@ -1,7 +1,7 @@
 const { Item, Photo, Size, Fav, Cart } = require('../models/models')
 const ApiError = require('../error/apiError')
 const { Op } = require('sequelize')
-const { getPoizonItem, getPoizonIds } = require('../services/poizonService')
+const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonService')
 
 function filterString(str) {
     const regex = /[^a-zA-Zа-яА-Я0-9 ]/g
@@ -96,6 +96,91 @@ class ItemController {
         try {
             const { name, item_uid, category, brand, model, orders } = req.body
             const item = await Item.create({ name, item_uid, category, brand, model, orders })
+            return res.json(item)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async createByLink(req, res, next) {
+        try {
+            const { link, category, timeElapsed, brand, model } = req.body
+            const item = await getByLink(link)
+            let items = []
+            let i = item.spuId
+            try {
+                await getPoizonItem(i, timeElapsed).then(async data => {
+                    console.log(data)
+                    try {
+                        let isItem = await Item.findOne({ where: { item_uid: i.toString() } })
+                        if (!isItem) {
+                            isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
+                            items.push(isItem)
+                        }
+                        for (let j of data.image.spuImage.images) {
+                            const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
+                            if (!isPhoto)
+                                await Photo.create({ img: j.url, item_uid: i.toString() })
+                        }
+                        let list = data.sizeDto.sizeInfo.sizeTemplate.list
+                        for (let j of list) {
+                            if (j.sizeKey === '适合脚长') j.sizeKey = 'SM'
+                            j.sizeKey = filterString(j.sizeKey)
+                            j.sizeValue = convertStringToArray(j.sizeValue)
+                        }
+                        for (let j = 0; j < data.skus.length; j++) {
+                            if (data.skus[j] && validProperty(data.skus[j])) {
+                                const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
+                                const defaultSize = validProperty(data.skus[j])
+                                const sameSizes = await Size.findAll({ where: { size_default: defaultSize, item_uid: i.toString() } })
+                                if (sameSizes && sameSizes.length > 0) {
+                                    for (let k of sameSizes) {
+                                        if (clientPrice) {
+                                            k.price = clientPrice
+                                            k.price_0 = price_0
+                                            k.price_2 = price_2
+                                            k.price_3 = price_3
+                                            k.delivery_0 = delivery_0
+                                            k.delivery_2 = delivery_2
+                                            k.delivery_3 = delivery_3
+                                            await k.save()
+                                        } else {
+                                            await k.destroy()
+                                        }
+                                    }
+                                    const defaultTemplate = list[0].sizeValue
+                                    const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
+                                    for (let k of list) {
+                                        if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
+                                            const isSize = await Size.findOne({ where: { size: k.sizeValue[defaultIndex], size_type: k.sizeKey, size_default: defaultSize, item_uid: i.toString() } })
+                                            if (!isSize && clientPrice) {
+                                                await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category, brand: isItem.brand })
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    if (clientPrice) {
+                                        await Size.create({ size: defaultSize, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: defaultSize, item_category: category, brand: isItem.brand })
+                                        const defaultTemplate = list[0].sizeValue
+                                        const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
+                                        for (let k of list) {
+                                            if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
+                                                await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category, brand: isItem.brand })
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+            } catch (e) {
+                console.log(e)
+                error = true
+            }
             return res.json(item)
         } catch (e) {
             console.log(e)

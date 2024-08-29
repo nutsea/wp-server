@@ -69,10 +69,16 @@ class OrderController {
 
     async createByAdmin(req, res, next) {
         try {
-            const { name, social_media, recipient, phone, address, ship_type, is_split, first_pay, second_pay, first_paid, second_paid, paid, course, cost, discount, promo_code, comment, can_review, status, items, social_media_type } = req.body
+            const { name, surname, social_media, recipient, phone, address, ship_type, is_split, first_pay, second_pay, first_paid, second_paid, paid, course, cost, discount, promo_code, comment, can_review, status, items, social_media_type, client_id } = req.body
             let fee = items.map(i => i.fee).reduce((a, b) => a + b)
             let delivery_cost = items.map(i => i.delivery_cost).reduce((a, b) => a + b)
-            const order = await Order.create({ name, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount: Number(discount), promo_code, comment, can_review, status, social_media_type })
+            let order
+            if (client_id) {
+                order = await Order.create({ name, surname, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount_cost: Number(cost) - Number(discount), discount: Number(discount), promo_code, comment, can_review, status, social_media_type, client_id })
+            } else {
+                const client = await User.create({ name, surname, phone })
+                order = await Order.create({ name, surname, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount_cost: Number(cost) - Number(discount), discount: Number(discount), promo_code, comment, can_review, status, social_media_type, client_id: client.id })
+            }
             for (let i of items) {
                 await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
                     await OrderItem.create({

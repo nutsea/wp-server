@@ -16,6 +16,10 @@ const $authPoizonHost = axios.create({
     baseURL: process.env.POIZON_URL
 })
 
+const $poizonHost = axios.create({
+    baseURL: process.env.POIZON_URL
+})
+
 const poizonInterceptor = async (config, timeElapsed) => {
     config.headers.apiKey = process.env.POIZON_API_KEY
     if (timeElapsed) {
@@ -46,4 +50,4 @@ const getToken = async () => {
     return data.access_token
 }
 
-module.exports = { $authCdekHost, $authPoizonHost }
+module.exports = { $authCdekHost, $authPoizonHost, $poizonHost }

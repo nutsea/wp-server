@@ -11,6 +11,9 @@ router.put('/changePassword', authMiddleware, userController.changePassword)
 router.get('/login', userController.login)
 router.get('/one', userController.getUser)
 router.get('/all', userController.getAll)
+router.get('/users', userController.getUsers)
 router.put('/roles', adminMiddleware, userController.updateRoles)
+router.put('/generatekey', adminMiddleware, userController.generateKey)
+router.put('/sync', authMiddleware, userController.syncUsers)
 
 module.exports = router

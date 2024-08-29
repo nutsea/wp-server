@@ -4,6 +4,7 @@ const itemController = require('../controllers/ItemController')
 const adminMiddleware = require('../middleware/adminMiddleware')
 
 router.post('/', itemController.create)
+router.post('/link', adminMiddleware, itemController.createByLink)
 router.post('/spu', adminMiddleware, itemController.createBySpuId)
 router.put('/updatebrandmodel', adminMiddleware, itemController.updateBrandAndModel)
 router.delete('/clearnonvalidsizes', itemController.clearNonValidSizes)

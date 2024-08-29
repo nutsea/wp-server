@@ -1,4 +1,4 @@
-const { $authPoizonHost } = require('./index')
+const { $authPoizonHost, $poizonHost } = require('./index')
 
 const getPoizonItem = async (spuId, timeElapsed) => {
     try {
@@ -30,4 +30,14 @@ const getPoizonIds = async (keyword, limit, page, timeElapsed) => {
     }
 }
 
-module.exports = { getPoizonItem, getPoizonIds }
+const getByLink = async (link) => {
+    try {
+        const { data } = await $authPoizonHost.get('/convertLinkToSpuId', { params: { link } })
+        return data
+    } catch (e) {
+        console.log(e)
+        return e
+    }
+}
+
+module.exports = { getPoizonItem, getPoizonIds, getByLink }
