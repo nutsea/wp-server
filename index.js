@@ -18,8 +18,8 @@ const PORT = os.platform() === 'linux' ? (process.env.PORT_LINUX || 5001) : (pro
 let options
 if (os.platform() === 'linux') {
     options = {
-        // key: fs.readFileSync('/etc/letsencrypt/live/wearpoizon.workinit.ru/privkey.pem'),
-        // cert: fs.readFileSync('/etc/letsencrypt/live/wearpoizon.workinit.ru/cert.pem')
+        key: fs.readFileSync('/etc/letsencrypt/live/server.kicksie.ru/privkey.pem'),
+        cert: fs.readFileSync('/etc/letsencrypt/live/server.kicksie.ru/cert.pem')
     }
 }
 
