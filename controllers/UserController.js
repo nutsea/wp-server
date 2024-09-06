@@ -14,6 +14,20 @@ const generateJwt = (id, name, role) => {
 }
 
 class UserController {
+    async create(req, res, next) {
+        try {
+            const { name, phone, link, link_type } = req.body
+            const [user_name, user_surname] = name.split(' ')
+            let formatPhone = phone.replace(/\D+/g, '')
+            if (formatPhone[0] === '8') formatPhone = '7' + formatPhone.slice(1)
+            const user = await User.create({ name: user_name, surname: user_surname, phone: formatPhone, link, link_type })
+            return res.json(user)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
+    }
+
     async checkUser(req, res, next) {
         try {
             const user = await User.findOne({ where: { id: req.user.id } })
@@ -36,6 +50,24 @@ class UserController {
             else user.surname = ''
             if (phone && phone.length === 11) user.phone = phone
             else user.phone = ''
+            await user.save()
+            return res.json(user)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e))
+        }
+    }
+
+    async updateByAdmin(req, res, next) {
+        try {
+            const { id, name, surname, phone, link, link_type, role } = req.body
+            const user = await User.findOne({ where: id })
+            if (name) user.name = name
+            if (surname) user.surname = surname
+            if (phone && phone.length === 11) user.phone = phone
+            if (link) user.link = link
+            if (link_type) user.link_type = link_type
+            if (role) user.role = role
             await user.save()
             return res.json(user)
         } catch (e) {
@@ -182,6 +214,7 @@ class UserController {
             let orders = await Order.findAll({ where: { client_id: oldUser.id } })
             for (let i of orders) {
                 i.client_id = newUser.id
+                i.name = newUser.name + ' ' + newUser.surname
                 await i.save()
             }
             if (!newUser.name) newUser.name = oldUser.name

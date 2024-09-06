@@ -35,7 +35,8 @@ class OrderController {
             const { name, social_media, checked_price, recipient, phone, address, ship_type, delivery_cost, is_split, course, fee, cost, discount_cost, discount, promo_code, items } = req.body
             const first_pay = is_split ? Math.ceil(cost / 2) : cost
             const second_pay = is_split ? Math.ceil(cost / 2) : 0
-            const order = await Order.create({ name, social_media, social_media_type: 'Telegram', checked_price, recipient, phone, address, ship_type, delivery_cost: delivery_cost * items.length, is_split, first_pay, second_pay, course, fee: fee * items.length, cost, discount_cost, discount, promo_code, client_id: req.user.id })
+            const client = await User.findOne({ where: { id: req.user.id } })
+            const order = await Order.create({ name: client.name + ' ' + client.surname, social_media, social_media_type: 'Telegram', checked_price, recipient, phone, address, ship_type, delivery_cost: delivery_cost * items.length, is_split, first_pay, second_pay, course, fee: fee * items.length, cost, discount_cost, discount, promo_code, client_id: req.user.id })
             for (let i of items) {
                 await Photo.findOne({ where: { item_uid: i.item_uid } }).then(async data => {
                     await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
@@ -58,7 +59,7 @@ class OrderController {
                     })
                 })
             }
-            const client = await User.findOne({ where: { id: req.user.id } })
+            // const client = await User.findOne({ where: { id: req.user.id } })
             bot.telegram.sendMessage(client.chat_id, messages[0] + order.id)
             return res.json(order)
         } catch (e) {
@@ -73,12 +74,14 @@ class OrderController {
             let fee = items.map(i => i.fee).reduce((a, b) => a + b)
             let delivery_cost = items.map(i => i.delivery_cost).reduce((a, b) => a + b)
             let order
-            if (client_id) {
-                order = await Order.create({ name, surname, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount_cost: Number(cost) - Number(discount), discount: Number(discount), promo_code, comment, can_review, status, social_media_type, client_id })
-            } else {
-                const client = await User.create({ name, surname, phone })
-                order = await Order.create({ name, surname, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount_cost: Number(cost) - Number(discount), discount: Number(discount), promo_code, comment, can_review, status, social_media_type, client_id: client.id })
-            }
+            let formatPhone = phone.replace(/\D+/g, '')
+            if (formatPhone[0] === '8') formatPhone = '7' + formatPhone.slice(1)
+            order = await Order.create({ name, surname, social_media, recipient, phone: formatPhone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount_cost: Number(cost) - Number(discount), discount: Number(discount), promo_code, comment, can_review, status, social_media_type, client_id })
+            // if (client_id) {
+            // } else {
+            //     const client = await User.create({ name, surname, phone })
+            //     order = await Order.create({ name, surname, social_media, recipient, phone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount_cost: Number(cost) - Number(discount), discount: Number(discount), promo_code, comment, can_review, status, social_media_type, client_id: client.id })
+            // }
             for (let i of items) {
                 await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
                     await OrderItem.create({
@@ -180,6 +183,17 @@ class OrderController {
     async getClientOrders(req, res, next) {
         try {
             const orders = await Order.findAll({ where: { client_id: req.user.id } })
+            return res.json(orders)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async getUserOrders(req, res, next) {
+        try {
+            const { id } = req.query
+            const orders = await Order.findAll({ where: { client_id: id } })
             return res.json(orders)
         } catch (e) {
             console.log(e)

@@ -46,6 +46,7 @@ const User = sequelize.define('user', {
     role: { type: DataTypes.STRING, allowNull: false, defaultValue: 'client' },
     password: { type: DataTypes.STRING },
     sync_key: { type: DataTypes.STRING },
+    link_type: { type: DataTypes.STRING, defaultValue: 'tg' },
 })
 
 const Fav = sequelize.define('favs', {
