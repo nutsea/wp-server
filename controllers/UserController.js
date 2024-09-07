@@ -177,7 +177,7 @@ class UserController {
             const { idArr, role } = req.body
             const users = await User.findAll({ where: { id: { [Op.in]: idArr } } })
             for (let i of users) {
-                if (i.id !== req.user.id && i.phone !== '79172682101') {
+                if (i.id !== req.user.id) {
                     i.role = role
                     await i.save()
                 }
@@ -209,6 +209,9 @@ class UserController {
             const oldUser = await User.findOne({ where: { sync_key } })
             if (!oldUser) {
                 return next(ApiError.badRequest('Пользователь не найден'))
+            }
+            if (oldUser.role === 'admin' || oldUser.role === 'main' || oldUser.role === 'dev') {
+                return next(ApiError.badRequest('Нет разрешения'))
             }
             let newUser = await User.findOne({ where: { id: req.user.id } })
             let orders = await Order.findAll({ where: { client_id: oldUser.id } })
