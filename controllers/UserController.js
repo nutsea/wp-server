@@ -61,7 +61,7 @@ class UserController {
     async updateByAdmin(req, res, next) {
         try {
             const { id, name, surname, phone, link, link_type, role } = req.body
-            const user = await User.findOne({ where: id })
+            const user = await User.findOne({ where: { id } })
             if (name) user.name = name
             if (surname) user.surname = surname
             if (phone && phone.length === 11) user.phone = phone
