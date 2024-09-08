@@ -1,4 +1,4 @@
-const { Item, Photo, Size, Fav, Cart } = require('../models/models')
+const { Item, Photo, Size, Fav, Cart, Constants } = require('../models/models')
 const ApiError = require('../error/apiError')
 const { Op } = require('sequelize')
 const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonService')
@@ -502,12 +502,13 @@ class ItemController {
     async getAll(req, res, next) {
         try {
             const { category, brands, models, sizes, size_type, prices, sort, limit, page, search } = req.query
+            const course = await Constants.findOne({ where: { name: 'course' } })
             const sizesDB = await Size.findAll({
                 where: {
                     ...(category && { item_category: category }),
                     size_type,
                     ...(sizes && { size: { [Op.in]: sizes } }),
-                    ...(prices && { price: { [Op.gte]: prices[0], [Op.lte]: prices[1] } }),
+                    ...(prices && { price: { [Op.gte]: Number(prices[0]) * 100 / course.value, [Op.lte]: Number(prices[1]) * 100 / course.value } }),
                 },
             })
             let pageClient = Number(page) || 1
