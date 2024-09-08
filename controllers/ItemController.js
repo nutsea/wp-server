@@ -4,13 +4,15 @@ const { Op } = require('sequelize')
 const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonService')
 
 function filterString(str) {
-    const regex = /[^a-zA-Zа-яА-Я0-9 ]/g
+    // const regex = /[^a-zA-Zа-яА-Я0-9 ]/g
+    const regex = /[^a-zA-Zа-яА-Я0-9 \x00-\x7F]/g
     return str.replace(regex, '')
 }
 
 function filterSize(str) {
-    const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F.]/g;
-    return str.replace(regex, '');
+    // const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F.]/g
+    const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F\x00-\x7F.]/g
+    return str.replace(regex, '')
 }
 
 function translateToSM(str) {
