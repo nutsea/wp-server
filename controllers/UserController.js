@@ -67,7 +67,7 @@ class UserController {
             if (phone && phone.length === 11) user.phone = phone
             if (link) user.link = link
             if (link_type) user.link_type = link_type
-            if (role) user.role = role
+            if (role && req.user.id !== id && user.role !== 'main') user.role = role
             await user.save()
             return res.json(user)
         } catch (e) {
