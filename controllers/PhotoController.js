@@ -7,11 +7,11 @@ const fs = require('fs')
 class PhotoController {
     async create(req, res, next) {
         try {
-            const { item_uid } = req.body
+            const { item_uid, item_id } = req.body
             const { img } = req.files
             let fileName = uuidv4() + ".jpg"
             img.mv(path.resolve(__dirname, '..', 'static', fileName))
-            const photo = await Photo.create({ img: fileName, item_uid })
+            const photo = await Photo.create({ img: fileName, item_uid, item_id })
             return res.json(photo)
         } catch (e) {
             console.log(e)

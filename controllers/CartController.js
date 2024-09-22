@@ -5,9 +5,11 @@ class CartController {
     async create(req, res, next) {
         try {
             const { item_uid, size, client_id, ship } = req.body
-            const item = await Cart.create({ item_uid, size, client_id, ship })
-            console.log(item)
-            return res.json(item)
+            const cartItem = await Cart.create({ item_uid, size, client_id, ship })
+            const item = await Item.findOne({ where: { item_uid } })
+            item.cart++
+            await item.save()
+            return res.json(cartItem)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
@@ -52,11 +54,14 @@ class CartController {
     async deleteOne(req, res, next) {
         try {
             const { id, size, user, ship } = req.query
-            let item
-            if (ship) item = await Cart.findOne({ where: { item_uid: id, size, client_id: user, ship } })
-            else item = await Cart.findOne({ where: { item_uid: id, size, client_id: user } })
-            await item.destroy()
-            return res.json(item)
+            let cartItem
+            if (ship) cartItem = await Cart.findOne({ where: { item_uid: id, size, client_id: user, ship } })
+            else cartItem = await Cart.findOne({ where: { item_uid: id, size, client_id: user } })
+            const item = await Item.findOne({ where: { item_uid: id } })
+            if (item.cart > 0) item.cart--
+            await item.save()
+            await cartItem.destroy()
+            return res.json(cartItem)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
@@ -67,6 +72,9 @@ class CartController {
         try {
             const items = await Cart.findAll({ where: { client_id: req.user.id } })
             for (let i of items) {
+                const item = await Item.findOne({ where: { item_uid: i.item_uid } })
+                if (item.cart > 0) item.cart--
+                await item.save()
                 await i.destroy()
             }
             return res.json(items)

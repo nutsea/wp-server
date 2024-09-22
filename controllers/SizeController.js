@@ -5,9 +5,9 @@ const { Op } = require('sequelize')
 class SizeController {
     async create(req, res, next) {
         try {
-            const { id, size, price, item_uid, size_type, size_default, item_category } = req.body
+            const { id, size, price, item_uid, size_type, size_default, item_category, item_id } = req.body
             const default_size = size_default || size
-            const size_item = await Size.create({ id, size, price, item_uid, size_type, size_default: default_size, item_category })
+            const size_item = await Size.create({ id, size, price, item_uid, size_type, size_default: default_size, item_category, item_id })
             return res.json(size_item)
         } catch (error) {
             console.log(error)

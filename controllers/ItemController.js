@@ -2,6 +2,7 @@ const { Item, Photo, Size, Fav, Cart, Constants } = require('../models/models')
 const ApiError = require('../error/apiError')
 const { Op } = require('sequelize')
 const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonService')
+const { Sequelize } = require('../db')
 
 function filterString(str) {
     // const regex = /[^a-zA-Zа-яА-Я0-9 ]/g
@@ -123,7 +124,7 @@ class ItemController {
                         for (let j of data.image.spuImage.images) {
                             const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
                             if (!isPhoto)
-                                await Photo.create({ img: j.url, item_uid: i.toString() })
+                                await Photo.create({ img: j.url, item_uid: i.toString(), item_id: isItem.id })
                         }
                         let list = data.sizeDto.sizeInfo.sizeTemplate.list
                         for (let j of list) {
@@ -207,7 +208,7 @@ class ItemController {
                             for (let j of data.image.spuImage.images) {
                                 const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
                                 if (!isPhoto)
-                                    await Photo.create({ img: j.url, item_uid: i.toString() })
+                                    await Photo.create({ img: j.url, item_uid: i.toString(), item_id: isItem.id })
                             }
                             let list = data.sizeDto.sizeInfo.sizeTemplate.list
                             for (let j of list) {
@@ -449,21 +450,21 @@ class ItemController {
             for (let i = 0; i < items.length; i++) {
                 const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
                 items[i].dataValues.img = img.dataValues.img
-                const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
-                let minPrice = 1000000000
-                for (let j = 0; j < prices.length; j++) {
-                    if (prices[j].dataValues.price < minPrice) {
-                        minPrice = prices[j].dataValues.price
-                    }
-                }
-                items[i].dataValues.minPrice = minPrice
-                let maxPrice = 0
-                for (let j = 0; j < prices.length; j++) {
-                    if (prices[j].dataValues.price > maxPrice) {
-                        maxPrice = prices[j].dataValues.price
-                    }
-                }
-                items[i].dataValues.maxPrice = maxPrice
+                // const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
+                // let minPrice = 1000000000
+                // for (let j = 0; j < prices.length; j++) {
+                //     if (prices[j].dataValues.price < minPrice) {
+                //         minPrice = prices[j].dataValues.price
+                //     }
+                // }
+                // items[i].dataValues.minPrice = minPrice
+                // let maxPrice = 0
+                // for (let j = 0; j < prices.length; j++) {
+                //     if (prices[j].dataValues.price > maxPrice) {
+                //         maxPrice = prices[j].dataValues.price
+                //     }
+                // }
+                // items[i].dataValues.maxPrice = maxPrice
             }
 
             items.sort((a, b) => b.orders - a.orders)
@@ -510,7 +511,8 @@ class ItemController {
                     ...(category && { item_category: category }),
                     size_type,
                     ...(sizes && { size: { [Op.in]: sizes } }),
-                    ...(prices && { price: { [Op.gte]: Number(prices[0]) * 100 / course.value, [Op.lte]: Number(prices[1]) * 100 / course.value } }),
+                    // ...(prices && { price: { [Op.gte]: Number(prices[0]) * 100 / course.value, [Op.lte]: Number(prices[1]) * 100 / course.value } }),
+                    ...(prices && { price: { [Op.gte]: Number(prices[0]), [Op.lte]: Number(prices[1]) } }),
                 },
             })
             let pageClient = Number(page) || 1
@@ -535,7 +537,113 @@ class ItemController {
                 conditions = { ...(brands && { brand: { [Op.in]: brands } }) }
             }
 
-            let items = await Item.findAll({
+            // OLD
+
+            // let items = await Item.findAll({
+            //     where: {
+            //         ...(category && { category }),
+            //         ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
+            //         ...(brands && conditions),
+            //         ...(search && {
+            //             [Op.or]: [
+            //                 { name: { [Op.iLike]: `%${search}%` } },
+            //                 { brand: { [Op.iLike]: `%${search}%` } },
+            //                 { model: { [Op.iLike]: `%${search}%` } },
+            //                 { item_uid: { [Op.iLike]: `%${search}%` } },
+            //             ]
+            //         })
+            //     },
+            // })
+
+            // for (let i = 0; i < items.length; i++) {
+            //     const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
+            //     items[i].dataValues.img = img.dataValues.img
+            //     const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
+            //     let minPrice = 1000000000
+            //     for (let j = 0; j < prices.length; j++) {
+            //         if (prices[j].dataValues.price < minPrice) {
+            //             minPrice = prices[j].dataValues.price
+            //         }
+            //     }
+            //     items[i].dataValues.minPrice = minPrice
+            //     let maxPrice = 0
+            //     for (let j = 0; j < prices.length; j++) {
+            //         if (prices[j].dataValues.price > maxPrice) {
+            //             maxPrice = prices[j].dataValues.price
+            //         }
+            //     }
+            //     items[i].dataValues.maxPrice = maxPrice
+            // }
+
+            // switch (sort) {
+            //     case 'new':
+            //         items.sort((a, b) => b.createdAt - a.createdAt);
+            //         break;
+
+            //     case 'old':
+            //         items.sort((a, b) => a.createdAt - b.createdAt);
+            //         break;
+
+            //     case 'priceUp':
+            //         items.sort((a, b) => a.dataValues.minPrice - b.dataValues.minPrice);
+            //         break;
+
+            //     case 'priceDown':
+            //         items.sort((a, b) => b.dataValues.minPrice - a.dataValues.minPrice);
+            //         break;
+
+            //     case 'popular':
+            //         items.sort((a, b) => b.orders - a.orders);
+            //         break;
+
+            //     default:
+            //         break;
+            // }
+
+            // const paginatedItems = items.slice(offset, offset + limitClient)
+
+            // for (let i of items) {
+            //     const fav = await Fav.findAll({ where: { item_uid: i.dataValues.id } })
+            //     const cart = await Cart.findAll({ where: { item_uid: i.dataValues.item_uid } })
+            //     i.dataValues.fav = fav.length
+            //     i.dataValues.cart = cart.length
+            // }
+
+            // items = {
+            //     count: items.length,
+            //     rows: paginatedItems
+            // }
+
+            // OLD
+
+            let sortCondition = []
+
+            switch (sort) {
+                case 'new':
+                    sortCondition = [['createdAt', 'DESC']]
+                    break;
+
+                case 'old':
+                    sortCondition = [['createdAt', 'ASC']]
+                    break;
+
+                case 'priceUp':
+                    sortCondition = [[Sequelize.literal('min_price'), 'ASC']]
+                    break;
+
+                case 'priceDown':
+                    sortCondition = [[Sequelize.literal('min_price'), 'DESC']]
+                    break;
+
+                case 'popular':
+                    sortCondition = [['orders', 'DESC']]
+                    break;
+
+                default:
+                    break;
+            }
+
+            let items = await Item.findAndCountAll({
                 where: {
                     ...(category && { category }),
                     ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
@@ -547,68 +655,13 @@ class ItemController {
                             { model: { [Op.iLike]: `%${search}%` } },
                             { item_uid: { [Op.iLike]: `%${search}%` } },
                         ]
-                    })
+                    }),
                 },
-            })
-
-            for (let i = 0; i < items.length; i++) {
-                const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
-                items[i].dataValues.img = img.dataValues.img
-                const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
-                let minPrice = 1000000000
-                for (let j = 0; j < prices.length; j++) {
-                    if (prices[j].dataValues.price < minPrice) {
-                        minPrice = prices[j].dataValues.price
-                    }
-                }
-                items[i].dataValues.minPrice = minPrice
-                let maxPrice = 0
-                for (let j = 0; j < prices.length; j++) {
-                    if (prices[j].dataValues.price > maxPrice) {
-                        maxPrice = prices[j].dataValues.price
-                    }
-                }
-                items[i].dataValues.maxPrice = maxPrice
-            }
-
-            switch (sort) {
-                case 'new':
-                    items.sort((a, b) => b.createdAt - a.createdAt);
-                    break;
-
-                case 'old':
-                    items.sort((a, b) => a.createdAt - b.createdAt);
-                    break;
-
-                case 'priceUp':
-                    items.sort((a, b) => a.dataValues.minPrice - b.dataValues.minPrice);
-                    break;
-
-                case 'priceDown':
-                    items.sort((a, b) => b.dataValues.minPrice - a.dataValues.minPrice);
-                    break;
-
-                case 'popular':
-                    items.sort((a, b) => b.orders - a.orders);
-                    break;
-
-                default:
-                    break;
-            }
-
-            const paginatedItems = items.slice(offset, offset + limitClient)
-
-            for (let i of items) {
-                const fav = await Fav.findAll({ where: { item_uid: i.dataValues.id } })
-                const cart = await Cart.findAll({ where: { item_uid: i.dataValues.item_uid } })
-                i.dataValues.fav = fav.length
-                i.dataValues.cart = cart.length
-            }
-
-            items = {
-                count: items.length,
-                rows: paginatedItems
-            }
+                order: sortCondition ? sortCondition :
+                    [['createdAt', 'ASC']],
+                offset,
+                limit: limitClient
+            });
 
             return res.json(items)
         } catch (e) {
@@ -660,21 +713,21 @@ class ItemController {
             for (let i = 0; i < items.length; i++) {
                 const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
                 items[i].dataValues.img = img.dataValues.img
-                const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
-                let minPrice = 1000000000
-                for (let j = 0; j < prices.length; j++) {
-                    if (prices[j].dataValues.price < minPrice) {
-                        minPrice = prices[j].dataValues.price
-                    }
-                }
-                items[i].dataValues.minPrice = minPrice
-                let maxPrice = 0
-                for (let j = 0; j < prices.length; j++) {
-                    if (prices[j].dataValues.price > maxPrice) {
-                        maxPrice = prices[j].dataValues.price
-                    }
-                }
-                items[i].dataValues.maxPrice = maxPrice
+                // const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
+                // let minPrice = 1000000000
+                // for (let j = 0; j < prices.length; j++) {
+                //     if (prices[j].dataValues.price < minPrice) {
+                //         minPrice = prices[j].dataValues.price
+                //     }
+                // }
+                // items[i].dataValues.minPrice = minPrice
+                // let maxPrice = 0
+                // for (let j = 0; j < prices.length; j++) {
+                //     if (prices[j].dataValues.price > maxPrice) {
+                //         maxPrice = prices[j].dataValues.price
+                //     }
+                // }
+                // items[i].dataValues.maxPrice = maxPrice
             }
 
             switch (sort) {
@@ -687,11 +740,11 @@ class ItemController {
                     break;
 
                 case 'priceUp':
-                    items.sort((a, b) => a.dataValues.minPrice - b.dataValues.minPrice);
+                    items.sort((a, b) => a.dataValues.min_price - b.dataValues.min_price);
                     break;
 
                 case 'priceDown':
-                    items.sort((a, b) => b.dataValues.minPrice - a.dataValues.minPrice);
+                    items.sort((a, b) => b.dataValues.min_price - a.dataValues.min_price);
                     break;
 
                 case 'popular':
@@ -737,14 +790,14 @@ class ItemController {
                 } else {
                     const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
                     items[i].dataValues.img = img.dataValues.img
-                    const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
-                    let minPrice = 1000000000
-                    for (let j = 0; j < prices.length; j++) {
-                        if (prices[j].dataValues.price < minPrice) {
-                            minPrice = prices[j].dataValues.price
-                        }
-                    }
-                    items[i].dataValues.minPrice = minPrice
+                    // const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
+                    // let minPrice = 1000000000
+                    // for (let j = 0; j < prices.length; j++) {
+                    //     if (prices[j].dataValues.price < minPrice) {
+                    //         minPrice = prices[j].dataValues.price
+                    //     }
+                    // }
+                    // items[i].dataValues.minPrice = minPrice
                 }
             }
             return res.json(items)

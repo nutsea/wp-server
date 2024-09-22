@@ -10,6 +10,11 @@ const Item = sequelize.define('items', {
     item_uid: { type: DataTypes.STRING, allowNull: false },
     category: { type: DataTypes.STRING },
     orders: { type: DataTypes.INTEGER, defaultValue: 0 },
+    img: { type: DataTypes.STRING },
+    min_price: { type: DataTypes.FLOAT },
+    max_price: { type: DataTypes.FLOAT },
+    fav: { type: DataTypes.INTEGER, defaultValue: 0 },
+    cart: { type: DataTypes.INTEGER, defaultValue: 0 }
 })
 
 const Photo = sequelize.define('photos', {
@@ -176,6 +181,18 @@ OrderItem.belongsTo(Order, { foreignKey: 'order_id' })
 
 Order.hasMany(OrderPhoto, { foreignKey: 'order_id' })
 OrderPhoto.belongsTo(Order, { foreignKey: 'order_id' })
+
+// Item.hasMany(Photo, { foreignKey: 'item_id' })
+// Photo.belongsTo(Item, { foreignKey: 'item_id' })
+
+// Item.hasMany(Size, { foreignKey: 'item_id' })
+// Size.belongsTo(Item, { foreignKey: 'item_id' })
+
+// Item.hasMany(Fav, { foreignKey: 'item_id' })
+// Fav.belongsTo(Item, { foreignKey: 'item_id' })
+
+// Item.hasMany(Cart, { foreignKey: 'item_id' })
+// Cart.belongsTo(Item, { foreignKey: 'item_id' })
 
 module.exports = {
     Auth,
