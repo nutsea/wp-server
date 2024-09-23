@@ -39,13 +39,17 @@ class SizeController {
             const { size_type, item_category } = req.query
             const whereClause = {
                 size_type,
-                ...(item_category && { item_category })
+                ...(item_category && { item_category }),
+                ...(size_type === 'EU' && {
+                    brand: { [Op.notIn]: ['Adidas', 'Adidas Originals', 'adidas', 'adidas originals'] }
+                }),
             }
 
-            if (size_type === 'EU') {
-                // whereClause.brand = { [Op.ne]: 'Adidas' }
-                whereClause.brand = { [Op.notIn]: ['Adidas', 'Adidas Originals', 'adidas', 'adidas originals'] };
-            }
+            console.log(whereClause)
+
+            // if (size_type === 'EU') {
+            //     whereClause.brand = { [Op.notIn]: ['Adidas', 'Adidas Originals', 'adidas', 'adidas originals'] }
+            // }
 
             const sizes = await Size.findAll({
                 attributes: ['size'],
