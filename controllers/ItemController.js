@@ -217,7 +217,7 @@ class ItemController {
                                 isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
                                 items.push(isItem)
                             }
-                            isItem.min_price = 1000000000
+                            isItem.min_price = 100000000
                             isItem.max_price = 0
                             for (let j of data.image.spuImage.images) {
                                 console.log(1, isItem.img)
@@ -373,7 +373,7 @@ class ItemController {
             let sizes = []
             for (let i of ids) {
                 const item = await Item.findOne({ where: { item_uid: i.toString() } })
-                item.min_price = 1000000000
+                item.min_price = 100000000
                 item.max_price = 0
                 const category = item.dataValues.category
                 try {
