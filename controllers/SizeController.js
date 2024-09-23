@@ -43,7 +43,8 @@ class SizeController {
             }
 
             if (size_type === 'EU') {
-                whereClause.brand = { [Op.ne]: 'Adidas' }
+                // whereClause.brand = { [Op.ne]: 'Adidas' }
+                whereClause.brand = { [Op.notIn]: ['Adidas', 'Adidas Originals', 'adidas', 'adidas originals'] };
             }
 
             const sizes = await Size.findAll({
