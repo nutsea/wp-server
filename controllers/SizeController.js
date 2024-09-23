@@ -41,11 +41,12 @@ class SizeController {
                 size_type,
                 ...(item_category && { item_category }),
                 ...(size_type === 'EU' && {
-                    brand: { [Op.notIn]: ['Adidas', 'Adidas Originals', 'adidas', 'adidas originals'] }
+                    // brand: { [Op.notIn]: ['Adidas', 'Adidas Originals', 'adidas', 'adidas originals'] }
+                    brand: { [Op.notILike]: '%adidas%' }
                 }),
             }
 
-            console.log(whereClause)
+            console.log(111, whereClause)
 
             // if (size_type === 'EU') {
             //     whereClause.brand = { [Op.notIn]: ['Adidas', 'Adidas Originals', 'adidas', 'adidas originals'] }
