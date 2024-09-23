@@ -238,11 +238,11 @@ class ItemController {
                             for (let j = 0; j < data.skus.length; j++) {
                                 if (data.skus[j] && validProperty(data.skus[j])) {
                                     const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
-                                    if (!isItem.min_price || isItem.min_price > clientPrice) {
+                                    if (!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) {
                                         isItem.min_price = clientPrice
                                         isItem.save()
                                     }
-                                    if (!isItem.max_price || isItem.max_price < clientPrice) {
+                                    if (!isItem.max_price || isItem.min_price === null || isItem.max_price < clientPrice) {
                                         isItem.max_price = clientPrice
                                         isItem.save()
                                     }
@@ -388,11 +388,11 @@ class ItemController {
                         for (let j = 0; j < data.skus.length; j++) {
                             if (data.skus[j] && validProperty(data.skus[j])) {
                                 const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
-                                if (!item.min_price || item.min_price > clientPrice) {
+                                if (!item.min_price || item.min_price === null || item.min_price > clientPrice) {
                                     item.min_price = clientPrice
                                     item.save()
                                 }
-                                if (!item.max_price || item.max_price < clientPrice) {
+                                if (!item.max_price || item.max_price === null || item.max_price < clientPrice) {
                                     item.max_price = clientPrice
                                     item.save()
                                 }
