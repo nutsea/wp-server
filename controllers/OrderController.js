@@ -60,7 +60,13 @@ class OrderController {
                 })
             }
             // const client = await User.findOne({ where: { id: req.user.id } })
-            bot.telegram.sendMessage(client.chat_id, messages[0] + order.id)
+            let orderNum = ''
+            if (order.paid > 0) {
+                orderNum = 'WP' + order.id
+            } else {
+                orderNum = 'R' + order.id
+            }
+            bot.telegram.sendMessage(client.chat_id, messages[0] + orderNum)
             return res.json(order)
         } catch (e) {
             console.log(e)
