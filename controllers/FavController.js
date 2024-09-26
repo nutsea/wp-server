@@ -6,9 +6,12 @@ class FavController {
         try {
             const { item_uid, client_id } = req.body
             const favItem = await Fav.create({ item_uid, client_id })
-            const item = await Item.findOne({ where: { item_uid } })
-            item.fav++
-            await item.save()
+            const item = await Item.findOne({ where: { id: item_uid } })
+            console.log(item_uid)
+            if (item) {
+                item.fav++
+                await item.save()
+            }
             return res.json(favItem)
         } catch (e) {
             console.log(e)
@@ -31,9 +34,11 @@ class FavController {
         try {
             const { item_uid, client_id } = req.query
             const favItem = await Fav.findOne({ where: { item_uid, client_id } })
-            const item = await Item.findOne({ where: { item_uid } })
-            if (item.fav > 0) item.fav--
-            await item.save()
+            const item = await Item.findOne({ where: { id: item_uid } })
+            if (item) {
+                if (item.fav > 0) item.fav--
+                await item.save()
+            }
             await favItem.destroy()
             return res.json(favItem)
         } catch (e) {
