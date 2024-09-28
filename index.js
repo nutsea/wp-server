@@ -88,19 +88,26 @@ if (os.platform() === 'linux') {
 
 const bot = new Telegraf(token)
 
+const removeEmojis = (str) => {
+    return str.replace(/[\p{Emoji_Presentation}\p{Emoji}\p{Extended_Pictographic}]/gu, '');
+}
+
 bot.start(async (ctx) => {
     try {
         const code = ctx.payload
         const auth = await models.Auth.findOne({ where: { code } })
-        console.log(1, code, auth)
         if (auth) {
             const user = await models.User.findOne({ where: { chat_id: ctx.chat.id.toString() } })
             if (user) {
                 checkAuth(auth, ctx)
-                user.link = ctx.message.from.username
+                user.link_type = ctx.message.from.username
                 await user.save()
             } else {
-                await models.User.create({ chat_id: ctx.chat.id.toString(), link: ctx.message.from.username.toString() })
+                await models.User.create({ 
+                    chat_id: ctx.chat.id.toString(), 
+                    link_type: ctx.message.from.username.toString(),
+                    // name: removeEmojis(ctx.message.from.first_name.toString())
+                })
                 checkAuth(auth, ctx)
             }
         }

@@ -217,7 +217,19 @@ class UserController {
             let orders = await Order.findAll({ where: { client_id: oldUser.id } })
             for (let i of orders) {
                 i.client_id = newUser.id
-                i.name = newUser.name + ' ' + newUser.surname
+                // i.name = newUser.name + ' ' + newUser.surname
+                if (newUser.name !== null) {
+                    i.name = newUser.name
+                }
+                if (newUser.surname !== null) {
+                    i.name += ' ' + newUser.surname
+                }
+                if (i.name.length === 0) {
+                    i.name === link
+                }
+                if (!i.social_media_type) {
+                    i.social_media_type = newUser.link_type
+                }
                 await i.save()
             }
             if (!newUser.name) newUser.name = oldUser.name

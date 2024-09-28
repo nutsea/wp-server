@@ -71,8 +71,8 @@ const Order = sequelize.define('orders', {
     // основное
     nickname: { type: DataTypes.STRING, defaultValue: '' },
     name: { type: DataTypes.STRING, allowNull: false },
-    social_media: { type: DataTypes.STRING, allowNull: false },
-    social_media_type: { type: DataTypes.STRING, allowNull: false, defaultValue: 'VK' },
+    social_media: { type: DataTypes.STRING },
+    social_media_type: { type: DataTypes.STRING },
     status: { type: DataTypes.INTEGER, defaultValue: 0 },
     manager: { type: DataTypes.STRING, defaultValue: '' },
     comment: { type: DataTypes.STRING, defaultValue: '' },
