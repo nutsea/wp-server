@@ -36,13 +36,15 @@ class SizeController {
 
     async getAll(req, res, next) {
         try {
-            const { size_type, item_category } = req.query
+            // const { size_type, item_category } = req.query
+            const { brand, size_type, item_category } = req.query
             const whereClause = {
                 size_type,
                 ...(item_category && { item_category }),
-                ...(size_type === 'EU' && {
-                    brand: { [Op.notILike]: '%adidas%' }
-                }),
+                brand
+                // ...(size_type === 'EU' && {
+                //     brand: { [Op.notILike]: '%adidas%' }
+                // }),
             }
 
             const sizes = await Size.findAll({

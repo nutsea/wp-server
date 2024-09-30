@@ -557,6 +557,7 @@ class ItemController {
         try {
             const { category, brands, models, sizes, size_type, prices, sort, limit, page, search } = req.query
             const course = await Constants.findOne({ where: { name: 'course' } })
+            console.log(prices)
             const sizesDB = await Size.findAll({
                 where: {
                     ...(category && { item_category: category }),
