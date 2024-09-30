@@ -40,13 +40,31 @@ const scheduleMessage = (chat_id, message) => {
     }
 
     if (currentHour >= 22 || currentHour < 10) {
-        const delay = delayUntilMorning - now
-        setTimeout(() => {
-            bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
-        }, delay)
+        const tomorrowMorning = new Date()
+        tomorrowMorning.setHours(10, 0, 0, 0)
+        if (currentHour >= 22) {
+            tomorrowMorning.setDate(tomorrowMorning.getDate() + 1)
+        }
+
+        const sendAt = Math.floor(tomorrowMorning.getTime() / 1000)
+
+        bot.telegram.sendMessage(chat_id, message, {
+            parse_mode: 'Markdown',
+            disable_web_page_preview: true,
+            disable_notification: false, // если нужно, можно выключить звук
+            schedule_date: sendAt
+        })
     } else {
         bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
     }
+    // if (currentHour >= 22 || currentHour < 10) {
+    //     const delay = delayUntilMorning - now
+    //     setTimeout(() => {
+    //         bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
+    //     }, delay)
+    // } else {
+    //     bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
+    // }
     // bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
 }
 
@@ -56,6 +74,7 @@ class OrderController {
             const { name, social_media, checked_price, recipient, phone, address, ship_type, delivery_cost, is_split, course, fee, cost, discount_cost, discount, promo_code, items } = req.body
             const first_pay = is_split ? Math.ceil(cost / 2) : cost
             const second_pay = is_split ? Math.ceil(cost / 2) : 0
+            console.log(1, req.user.id)
             const client = await User.findOne({ where: { id: req.user.id } })
             let newName = ''
             if (client.name !== null) {
@@ -67,7 +86,6 @@ class OrderController {
             if (newName.length === 0) {
                 newName = recipient.split(' ', 2)[1]
             }
-            // const order = await Order.create({ name: client.name + ' ' + client.surname, social_media, social_media_type: 'Telegram', checked_price, recipient, phone, address, ship_type, delivery_cost: delivery_cost * items.length, is_split, first_pay, second_pay, course, fee: fee * items.length, cost, discount_cost, discount, promo_code, client_id: req.user.id })
             const order = await Order.create({ name: newName, social_media: client.link, social_media_type: client.link_type, checked_price, recipient, phone, address, ship_type, delivery_cost: delivery_cost * items.length, is_split, first_pay, second_pay, course, fee: fee * items.length, cost, discount_cost, discount, promo_code, client_id: req.user.id })
             for (let i of items) {
                 await Photo.findOne({ where: { item_uid: i.item_uid } }).then(async data => {
@@ -98,6 +116,7 @@ class OrderController {
                 orderNum = 'R' + order.id + '*'
             }
             scheduleMessage(client.chat_id, messages[0] + orderNum + messages.startContinue)
+            // bot.telegram.sendMessage('-1002321184898', 'новый заказ', { parse_mode: 'Markdown', disable_web_page_preview: true })
             return res.json(order)
         } catch (e) {
             console.log(e)
