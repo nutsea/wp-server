@@ -83,7 +83,7 @@ let token
 if (os.platform() === 'linux') {
     token = process.env.BOT_TOKEN_LINUX
 } else {
-    token = process.env.BOT_TOKEN
+    token = process.env.BOT_TOKEN_LINUX
 }
 
 const bot = new Telegraf(token)
