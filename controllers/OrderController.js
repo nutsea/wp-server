@@ -12,7 +12,7 @@ const { Telegraf } = require('telegraf')
 // not for linux
 // const token = '7441093659:AAFtibz3rhCOdpHZpVC8HOe-YNNuvWNrCpE'
 
-const token = process.env.BOT_TOKEN
+const token = process.env.BOT_TOKEN_LINUX
 
 const bot = new Telegraf(token)
 
