@@ -74,7 +74,6 @@ class OrderController {
             const { name, social_media, checked_price, recipient, phone, address, ship_type, delivery_cost, is_split, course, fee, cost, discount_cost, discount, promo_code, items } = req.body
             const first_pay = is_split ? Math.ceil(cost / 2) : cost
             const second_pay = is_split ? Math.ceil(cost / 2) : 0
-            console.log(1, req.user.id)
             const client = await User.findOne({ where: { id: req.user.id } })
             let newName = ''
             if (client.name !== null) {
@@ -116,7 +115,13 @@ class OrderController {
                 orderNum = 'R' + order.id + '*'
             }
             scheduleMessage(client.chat_id, messages[0] + orderNum + messages.startContinue)
-            // bot.telegram.sendMessage('-1002321184898', 'новый заказ', { parse_mode: 'Markdown', disable_web_page_preview: true })
+            const channelMsg = 'Новый заказ *' + orderNum 
+            // + '\nНик: ' + newName 
+            // + '\nЛогин: @' + client.link_type 
+            // + '\nКол-во позиций: ' + items.length 
+            // + '\n' + (checked_price ? 'Цена проверена' : 'Цена не проверена') 
+            // + '\nСумма к оплате: ' + discount_cost.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' ₽'
+            bot.telegram.sendMessage('-1002321184898', channelMsg, { parse_mode: 'Markdown', disable_web_page_preview: true })
             return res.json(order)
         } catch (e) {
             console.log(e)
