@@ -45,7 +45,7 @@ class UserController {
             const { name, surname, phone } = req.body
             const user = await User.findOne({ where: { id: req.user.id } })
             if (name) user.name = name
-            else user.name = ''
+            // else user.name = ''
             if (surname) user.surname = surname
             else user.surname = ''
             if (phone && phone.length === 11) user.phone = phone
@@ -215,27 +215,31 @@ class UserController {
             }
             let newUser = await User.findOne({ where: { id: req.user.id } })
             let orders = await Order.findAll({ where: { client_id: oldUser.id } })
+            if (!newUser.name) newUser.name = oldUser.name
+            if (!newUser.surname) newUser.surname = oldUser.surname
+            if (!newUser.phone) newUser.phone = oldUser.phone
+            if (!newUser.link) newUser.link = oldUser.link
+            if (!newUser.link_type) newUser.link_type = oldUser.link_type
             for (let i of orders) {
                 i.client_id = newUser.id
                 // i.name = newUser.name + ' ' + newUser.surname
                 if (newUser.name !== null) {
                     i.name = newUser.name
                 }
-                if (newUser.surname !== null) {
-                    i.name += ' ' + newUser.surname
-                }
+                // if (newUser.surname !== null) {
+                //     i.name += ' ' + newUser.surname
+                // }
                 if (i.name.length === 0) {
-                    i.name === link
+                    i.name === newUser.link
+                }
+                if (!i.social_media) {
+                    i.social_media = newUser.link
                 }
                 if (!i.social_media_type) {
                     i.social_media_type = newUser.link_type
                 }
                 await i.save()
             }
-            if (!newUser.name) newUser.name = oldUser.name
-            if (!newUser.surname) newUser.surname = oldUser.surname
-            if (!newUser.phone) newUser.phone = oldUser.phone
-            if (!newUser.link) newUser.link = oldUser.link
             await newUser.save()
             await oldUser.destroy()
             return res.json({ newUser })
