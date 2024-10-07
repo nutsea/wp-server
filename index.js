@@ -101,7 +101,7 @@ bot.start(async (ctx) => {
             if (user) {
                 checkAuth(auth, ctx)
                 user.link_type = ctx.message.from.username
-                if (!user.name) user.name = removeEmojis(ctx.message.from.first_name.toString())
+                if (!user.name || user.name.length === 0) user.name = removeEmojis(ctx.message.from.first_name.toString())
                 await user.save()
             } else {
                 await models.User.create({
