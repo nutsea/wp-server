@@ -115,7 +115,7 @@ class OrderController {
                 orderNum = 'R' + order.id + '*'
             }
             scheduleMessage(client.chat_id, messages[0] + orderNum + messages.startContinue)
-            const channelMsg = 'Новый заказ *' + orderNum 
+            const channelMsg = 'Новый заказ *' + orderNum
             // + '\nНик: ' + newName 
             // + '\nЛогин: @' + client.link_type 
             // + '\nКол-во позиций: ' + items.length 
@@ -137,7 +137,31 @@ class OrderController {
             let order
             let formatPhone = phone.replace(/\D+/g, '')
             if (formatPhone[0] === '8') formatPhone = '7' + formatPhone.slice(1)
-            order = await Order.create({ name, surname, social_media, recipient, phone: formatPhone, address, ship_type, delivery_cost: Number(delivery_cost), is_split, first_pay: Number(first_pay), second_pay: Number(second_pay), first_paid, second_paid, paid: paid ? paid : 0, course, fee: Number(fee), cost: Number(cost), discount_cost: Number(cost) - Number(discount), discount: Number(discount), promo_code, comment, can_review, status, social_media_type, client_id })
+            order = await Order.create({
+                name,
+                surname,
+                social_media,
+                recipient,
+                phone: formatPhone,
+                address, ship_type,
+                delivery_cost: Number(delivery_cost),
+                is_split, first_pay: Number(first_pay),
+                second_pay: Number(second_pay),
+                first_paid, second_paid,
+                paid: paid ? paid : 0,
+                course,
+                fee: Number(fee),
+                cost: Number(cost),
+                discount_cost: Number(cost) - Number(discount),
+                discount: Number(discount),
+                promo_code,
+                comment,
+                can_review,
+                status,
+                social_media_type,
+                client_id,
+                from: 'crm'
+            })
             for (let i of items) {
                 await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
                     await OrderItem.create({

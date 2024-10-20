@@ -715,7 +715,7 @@ class ItemController {
                 limit: limitClient
             });
 
-            return res.json(items)
+            return res.json({ items, sizesDB })
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))

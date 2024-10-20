@@ -106,6 +106,8 @@ const Order = sequelize.define('orders', {
     promo_code: { type: DataTypes.STRING, defaultValue: '' },
     // отзыв
     can_review: { type: DataTypes.BOOLEAN, defaultValue: true },
+    // откуда заказ
+    from: { type: DataTypes.STRING, defaultValue: 'site' }
 })
 
 const OrderItem = sequelize.define('order_items', {
