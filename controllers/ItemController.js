@@ -706,102 +706,79 @@ class ItemController {
 
             // OLD
 
-            // let items = await Item.findAndCountAll({
-            //     where: {
-            //         ...(category && { category }),
-            //         ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
-            //         ...(brands && conditions),
-            //         ...(search && {
-            //             [Op.or]: [
-            //                 { name: { [Op.iLike]: `%${search}%` } },
-            //                 { brand: { [Op.iLike]: `%${search}%` } },
-            //                 { model: { [Op.iLike]: `%${search}%` } },
-            //                 { item_uid: { [Op.iLike]: `%${search}%` } },
-            //             ]
-            //         }),
-            //     },
-            //     order: sortCondition.length ? sortCondition : [['createdAt', 'ASC']],
-            //     offset,
-            //     limit: limitClient
-            // });
 
-            let items = await Item.findAll({
-                where: {
-                    ...(category && { category }),
-                    ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
-                    ...(brands && conditions),
-                    ...(search && {
-                        [Op.or]: [
-                            { name: { [Op.iLike]: `%${search}%` } },
-                            { brand: { [Op.iLike]: `%${search}%` } },
-                            { model: { [Op.iLike]: `%${search}%` } },
-                            { item_uid: { [Op.iLike]: `%${search}%` } },
-                        ]
-                    }),
-                },
-                order: sortCondition.length ? sortCondition : [['createdAt', 'ASC']],
-            })
+            if (sort !== 'priceUp' && sort !== 'priceDown') {
+                let items = await Item.findAndCountAll({
+                    where: {
+                        ...(category && { category }),
+                        ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
+                        ...(brands && conditions),
+                        ...(search && {
+                            [Op.or]: [
+                                { name: { [Op.iLike]: `%${search}%` } },
+                                { brand: { [Op.iLike]: `%${search}%` } },
+                                { model: { [Op.iLike]: `%${search}%` } },
+                                { item_uid: { [Op.iLike]: `%${search}%` } },
+                            ]
+                        }),
+                    },
+                    order: sortCondition.length ? sortCondition : [['createdAt', 'ASC']],
+                    offset,
+                    limit: limitClient
+                })
 
-            for (let i of items) {
-                let minimal = 1000000000
-                if (sizesDB) {
-                    const found = sizesDB.filter(j => j.item_uid === i.item_uid)
-                    for (let j of found) {
-                        if (j.price < minimal) minimal = j.price
+                return res.json({ items })
+            } else {
+                let items = await Item.findAll({
+                    where: {
+                        ...(category && { category }),
+                        ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
+                        ...(brands && conditions),
+                        ...(search && {
+                            [Op.or]: [
+                                { name: { [Op.iLike]: `%${search}%` } },
+                                { brand: { [Op.iLike]: `%${search}%` } },
+                                { model: { [Op.iLike]: `%${search}%` } },
+                                { item_uid: { [Op.iLike]: `%${search}%` } },
+                            ]
+                        }),
+                    },
+                    order: sortCondition.length ? sortCondition : [['createdAt', 'ASC']],
+                })
+
+                for (let i of items) {
+                    let minimal = 1000000000
+                    if (sizesDB) {
+                        const found = sizesDB.filter(j => j.item_uid === i.item_uid)
+                        for (let j of found) {
+                            if (j.price < minimal) minimal = j.price
+                        }
                     }
+                    i.dataValues.price = minimal
                 }
-                i.dataValues.price = minimal
+
+                switch (sort) {
+                    case 'priceUp':
+                        items.sort((a, b) => a.dataValues.price - b.dataValues.price);
+                        break
+
+                    case 'priceDown':
+                        items.sort((a, b) => b.dataValues.price - a.dataValues.price);
+                        break
+
+                    default:
+                        break
+                }
+
+                const paginatedItems = items.slice(offset, offset + limitClient)
+
+                items = {
+                    count: items.length,
+                    rows: paginatedItems
+                }
+
+                return res.json({ items })
             }
-
-            switch (sort) {
-                case 'priceUp':
-                    items.sort((a, b) => a.dataValues.price - b.dataValues.price);
-                    break
-
-                case 'priceDown':
-                    items.sort((a, b) => b.dataValues.price - a.dataValues.price);
-                    break
-
-                default:
-                    break
-            }
-
-            const paginatedItems = items.slice(offset, offset + limitClient)
-
-            items = {
-                count: items.length,
-                rows: paginatedItems
-            }
-
-            // let items = await Item.findAndCountAll({
-            //     include: [{
-            //         model: Size, // включаем таблицу sizes
-            //         // where: { ...(sizeSelected && { size: sizeSelected }) }, // фильтрация по размеру
-            //         where: { ...({ size: 35 }) }, // фильтрация по размеру
-            //         attributes: ['size', 'price'], // выбираем только нужные поля
-            //     }],
-            //     where: {
-            //         ...(category && { category }),
-            //         ...(brands && conditions),
-            //         ...(search && {
-            //             [Op.or]: [
-            //                 { name: { [Op.iLike]: `%${search}%` } },
-            //                 { brand: { [Op.iLike]: `%${search}%` } },
-            //                 { model: { [Op.iLike]: `%${search}%` } },
-            //                 { item_uid: { [Op.iLike]: `%${search}%` } },
-            //             ]
-            //         }),
-            //     },
-            //     order: [
-            //         ...(sort === 'priceUp' ? [Sequelize.col('Size.price'), 'ASC'] : []),
-            //         ...(sort === 'priceDown' ? [Sequelize.col('Size.price'), 'DESC'] : []), // сортировка по цене из таблицы sizes
-            //         ...((sort !== 'priceUp' && sort !== 'priceDown' && sortCondition) ? sortCondition : [['createdAt', 'ASC']])
-            //     ],
-            //     offset,
-            //     limit: limitClient
-            // })
-
-            return res.json({ items, sizesDB })
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
