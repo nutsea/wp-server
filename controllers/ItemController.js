@@ -707,7 +707,7 @@ class ItemController {
             // OLD
 
 
-            if (sort !== 'priceUp' && sort !== 'priceDown') {
+            if (sizes) {
                 let items = await Item.findAndCountAll({
                     where: {
                         ...(category && { category }),
