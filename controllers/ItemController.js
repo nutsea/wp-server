@@ -556,8 +556,45 @@ class ItemController {
     async getAll(req, res, next) {
         try {
             const { category, brands, models, sizes, size_type, prices, sort, limit, page, search } = req.query
+            let sortCondition = []
+            switch (sort) {
+                case 'new':
+                    sortCondition = [['createdAt', 'DESC']]
+                    break;
+
+                case 'old':
+                    sortCondition = [['createdAt', 'ASC']]
+                    break;
+
+                case 'priceUp':
+                    sortCondition = [[Sequelize.literal('min_price'), 'ASC']]
+                    break;
+
+                case 'priceDown':
+                    sortCondition = [[Sequelize.literal('min_price'), 'DESC']]
+                    break;
+
+                case 'popular':
+                    sortCondition = [['orders', 'DESC']]
+                    break;
+
+                default:
+                    break;
+            }
+            let sortConditionSizes = []
+            switch (sort) {
+                case 'priceUp':
+                    sortConditionSizes = [[Sequelize.literal('price'), 'ASC']]
+                    break;
+
+                case 'priceDown':
+                    sortConditionSizes = [[Sequelize.literal('price'), 'DESC']]
+                    break;
+
+                default:
+                    break;
+            }
             const course = await Constants.findOne({ where: { name: 'course' } })
-            console.log(prices)
             const sizesDB = await Size.findAll({
                 where: {
                     ...(category && { item_category: category }),
@@ -567,6 +604,7 @@ class ItemController {
                     ...(prices && { price: { [Op.gte]: Number(prices[0]), [Op.lte]: Number(prices[1]) } }),
                 },
             })
+            console.log(sizesDB)
             let pageClient = Number(page) || 1
             let limitClient = Number(limit) || 18
             let offset = Number(pageClient) * Number(limitClient) - Number(limitClient)
@@ -629,27 +667,27 @@ class ItemController {
 
             // switch (sort) {
             //     case 'new':
-            //         items.sort((a, b) => b.createdAt - a.createdAt);
-            //         break;
+            //         items.sort((a, b) => b.createdAt - a.createdAt)
+            //         break
 
             //     case 'old':
-            //         items.sort((a, b) => a.createdAt - b.createdAt);
-            //         break;
+            //         items.sort((a, b) => a.createdAt - b.createdAt)
+            //         break
 
             //     case 'priceUp':
-            //         items.sort((a, b) => a.dataValues.minPrice - b.dataValues.minPrice);
-            //         break;
+            //         items.sort((a, b) => a.dataValues.minPrice - b.dataValues.minPrice)
+            //         break
 
             //     case 'priceDown':
-            //         items.sort((a, b) => b.dataValues.minPrice - a.dataValues.minPrice);
-            //         break;
+            //         items.sort((a, b) => b.dataValues.minPrice - a.dataValues.minPrice)
+            //         break
 
             //     case 'popular':
-            //         items.sort((a, b) => b.orders - a.orders);
-            //         break;
+            //         items.sort((a, b) => b.orders - a.orders)
+            //         break
 
             //     default:
-            //         break;
+            //         break
             // }
 
             // const paginatedItems = items.slice(offset, offset + limitClient)
@@ -668,34 +706,26 @@ class ItemController {
 
             // OLD
 
-            let sortCondition = []
+            // let items = await Item.findAndCountAll({
+            //     where: {
+            //         ...(category && { category }),
+            //         ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
+            //         ...(brands && conditions),
+            //         ...(search && {
+            //             [Op.or]: [
+            //                 { name: { [Op.iLike]: `%${search}%` } },
+            //                 { brand: { [Op.iLike]: `%${search}%` } },
+            //                 { model: { [Op.iLike]: `%${search}%` } },
+            //                 { item_uid: { [Op.iLike]: `%${search}%` } },
+            //             ]
+            //         }),
+            //     },
+            //     order: sortCondition.length ? sortCondition : [['createdAt', 'ASC']],
+            //     offset,
+            //     limit: limitClient
+            // });
 
-            switch (sort) {
-                case 'new':
-                    sortCondition = [['createdAt', 'DESC']]
-                    break;
-
-                case 'old':
-                    sortCondition = [['createdAt', 'ASC']]
-                    break;
-
-                case 'priceUp':
-                    sortCondition = [[Sequelize.literal('min_price'), 'ASC']]
-                    break;
-
-                case 'priceDown':
-                    sortCondition = [[Sequelize.literal('min_price'), 'DESC']]
-                    break;
-
-                case 'popular':
-                    sortCondition = [['orders', 'DESC']]
-                    break;
-
-                default:
-                    break;
-            }
-
-            let items = await Item.findAndCountAll({
+            let items = await Item.findAll({
                 where: {
                     ...(category && { category }),
                     ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
@@ -709,11 +739,67 @@ class ItemController {
                         ]
                     }),
                 },
-                order: sortCondition ? sortCondition :
-                    [['createdAt', 'ASC']],
-                offset,
-                limit: limitClient
-            });
+                order: sortCondition.length ? sortCondition : [['createdAt', 'ASC']],
+            })
+
+            for (let i of items) {
+                let minimal = 1000000000
+                if (sizesDB) {
+                    const found = sizesDB.filter(j => j.item_uid === i.item_uid)
+                    for (let j of found) {
+                        if (j.price < minimal) minimal = j.price
+                    }
+                }
+                i.dataValues.price = minimal
+            }
+
+            switch (sort) {
+                case 'priceUp':
+                    items.sort((a, b) => a.dataValues.price - b.dataValues.price);
+                    break
+
+                case 'priceDown':
+                    items.sort((a, b) => b.dataValues.price - a.dataValues.price);
+                    break
+
+                default:
+                    break
+            }
+
+            const paginatedItems = items.slice(offset, offset + limitClient)
+
+            items = {
+                count: items.length,
+                rows: paginatedItems
+            }
+
+            // let items = await Item.findAndCountAll({
+            //     include: [{
+            //         model: Size, // включаем таблицу sizes
+            //         // where: { ...(sizeSelected && { size: sizeSelected }) }, // фильтрация по размеру
+            //         where: { ...({ size: 35 }) }, // фильтрация по размеру
+            //         attributes: ['size', 'price'], // выбираем только нужные поля
+            //     }],
+            //     where: {
+            //         ...(category && { category }),
+            //         ...(brands && conditions),
+            //         ...(search && {
+            //             [Op.or]: [
+            //                 { name: { [Op.iLike]: `%${search}%` } },
+            //                 { brand: { [Op.iLike]: `%${search}%` } },
+            //                 { model: { [Op.iLike]: `%${search}%` } },
+            //                 { item_uid: { [Op.iLike]: `%${search}%` } },
+            //             ]
+            //         }),
+            //     },
+            //     order: [
+            //         ...(sort === 'priceUp' ? [Sequelize.col('Size.price'), 'ASC'] : []),
+            //         ...(sort === 'priceDown' ? [Sequelize.col('Size.price'), 'DESC'] : []), // сортировка по цене из таблицы sizes
+            //         ...((sort !== 'priceUp' && sort !== 'priceDown' && sortCondition) ? sortCondition : [['createdAt', 'ASC']])
+            //     ],
+            //     offset,
+            //     limit: limitClient
+            // })
 
             return res.json({ items, sizesDB })
         } catch (e) {
