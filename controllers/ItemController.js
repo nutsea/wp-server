@@ -118,7 +118,11 @@ class ItemController {
                     try {
                         let isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                         if (!isItem) {
-                            isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
+                            if (filterString(data.detail.structureTitle).length > 0) {
+                                isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
+                            } else {
+                                isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, orders: 0 })
+                            }
                             items.push(isItem)
                         }
                         console.log(1, isItem.img)
@@ -221,7 +225,11 @@ class ItemController {
                         try {
                             let isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                             if (!isItem) {
-                                isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
+                                if (filterString(data.detail.structureTitle).length > 0) {
+                                    isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
+                                } else {
+                                    isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, orders: 0 })
+                                }
                                 items.push(isItem)
                             }
                             isItem.min_price = 100000000
@@ -386,7 +394,11 @@ class ItemController {
             let ids = JSON.parse(spuIdArr)
             let sizes = []
             for (let i of ids) {
-                const item = await Item.findOne({ where: { item_uid: i.toString() } })
+                let item = await Item.findOne({ where: { item_uid: i.toString() } })
+                if (item.name.length === 0) {
+                    item.name = item.brand + ' ' + item.model
+                    await item.save()
+                }
                 const sizes = await Size.findAll({ where: { item_uid: i.toString() } })
                 item.min_price = 100000000
                 item.max_price = 0
