@@ -646,7 +646,6 @@ class ItemController {
                     ...(prices && { price: { [Op.gte]: Number(prices[0]), [Op.lte]: Number(prices[1]) } }),
                 },
             })
-            console.log(sizesDB)
             let pageClient = Number(page) || 1
             let limitClient = Number(limit) || 18
             let offset = Number(pageClient) * Number(limitClient) - Number(limitClient)
@@ -749,7 +748,7 @@ class ItemController {
             // OLD
 
 
-            if (sizes) {
+            if (!sizes) {
                 let items = await Item.findAndCountAll({
                     where: {
                         ...(category && { category }),
@@ -789,7 +788,7 @@ class ItemController {
                 })
 
                 for (let i of items) {
-                    let minimal = 1000000000
+                    let minimal = 100000000
                     if (sizesDB) {
                         const found = sizesDB.filter(j => j.item_uid === i.item_uid)
                         for (let j of found) {
@@ -798,7 +797,7 @@ class ItemController {
                     }
                     i.dataValues.price = minimal
                 }
-
+                
                 switch (sort) {
                     case 'priceUp':
                         items.sort((a, b) => a.dataValues.price - b.dataValues.price);
