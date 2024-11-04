@@ -42,6 +42,7 @@ const Size = sequelize.define('sizes', {
 
 const User = sequelize.define('user', {
     id: { type: DataTypes.UUID, defaultValue: uuidv4, primaryKey: true, allowNull: false, unique: true },
+    client: { type: DataTypes.STRING },
     name: { type: DataTypes.STRING },
     surname: { type: DataTypes.STRING },
     phone: { type: DataTypes.STRING },

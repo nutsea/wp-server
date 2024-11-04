@@ -76,8 +76,8 @@ class OrderController {
             const second_pay = is_split ? Math.ceil(cost / 2) : 0
             const client = await User.findOne({ where: { id: req.user.id } })
             let newName = ''
-            if (client.name !== null) {
-                newName = client.name
+            if (client.client !== null) {
+                newName = client.client
             }
             // if (client.surname !== null) {
             //     newName += ' ' + client.surname
@@ -116,11 +116,6 @@ class OrderController {
             }
             scheduleMessage(client.chat_id, messages[0] + orderNum + messages.startContinue)
             const channelMsg = 'Новый заказ *' + orderNum
-            // + '\nНик: ' + newName 
-            // + '\nЛогин: @' + client.link_type 
-            // + '\nКол-во позиций: ' + items.length 
-            // + '\n' + (checked_price ? 'Цена проверена' : 'Цена не проверена') 
-            // + '\nСумма к оплате: ' + discount_cost.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' ₽'
             bot.telegram.sendMessage('-1002321184898', channelMsg, { parse_mode: 'Markdown', disable_web_page_preview: true })
             return res.json(order)
         } catch (e) {

@@ -17,10 +17,9 @@ class UserController {
     async create(req, res, next) {
         try {
             const { name, phone, link, link_type } = req.body
-            const [user_name, user_surname] = name.split(' ')
             let formatPhone = phone.replace(/\D+/g, '')
             if (formatPhone[0] === '8') formatPhone = '7' + formatPhone.slice(1)
-            const user = await User.create({ name: user_name, surname: user_surname, phone: formatPhone, link, link_type })
+            const user = await User.create({ client: name, phone: formatPhone, link, link_type })
             return res.json(user)
         } catch (e) {
             console.log(e)
@@ -60,10 +59,11 @@ class UserController {
 
     async updateByAdmin(req, res, next) {
         try {
-            const { id, name, surname, phone, link, link_type, role } = req.body
+            const { id, name, surname, phone, link, link_type, role, client } = req.body
             const user = await User.findOne({ where: { id } })
             if (name) user.name = name
             if (surname) user.surname = surname
+            if (client) user.client = client
             if (phone && phone.length === 11) user.phone = phone
             if (link) user.link = link
             if (link_type) user.link_type = link_type
@@ -215,19 +215,21 @@ class UserController {
             }
             let newUser = await User.findOne({ where: { id: req.user.id } })
             let orders = await Order.findAll({ where: { client_id: oldUser.id } })
-            if (!newUser.name) newUser.name = oldUser.name
-            if (!newUser.surname) newUser.surname = oldUser.surname
+            let orders2 = await Order.findAll({ where: { client_id: newUser.id } })
+            for (let i of orders2) {
+                orders.push(i)
+            }
+            if (oldUser.client) newUser.client = oldUser.client
             if (!newUser.phone) newUser.phone = oldUser.phone
-            if (!newUser.link) newUser.link = oldUser.link
+            if (oldUser.link) newUser.link = oldUser.link
             if (!newUser.link_type) newUser.link_type = oldUser.link_type
             for (let i of orders) {
                 i.client_id = newUser.id
-                // i.name = newUser.name + ' ' + newUser.surname
-                if (newUser.name !== null) {
-                    i.name = newUser.name
+                if (oldUser.client) {
+                    i.name = oldUser.client
                 }
-                // if (newUser.surname !== null) {
-                //     i.name += ' ' + newUser.surname
+                // if (oldUser.surname) {
+                //     i.name += ' ' + oldUser.surname
                 // }
                 if (i.name.length === 0) {
                     i.name === newUser.link
