@@ -150,7 +150,8 @@ class UserController {
                             { surname: { [Op.iLike]: `%${search}%` } },
                             { email: { [Op.iLike]: `%${search}%` } },
                             { phone: { [Op.iLike]: `%${search}%` } },
-                            { link: { [Op.iLike]: `%${search}%` } }
+                            { link: { [Op.iLike]: `%${search}%` } },
+                            { link_type: { [Op.iLike]: `%${search}%` } },
                         ]
                     })
                 }

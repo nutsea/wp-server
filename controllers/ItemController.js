@@ -5,13 +5,11 @@ const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonSe
 const { Sequelize } = require('../db')
 
 function filterString(str) {
-    // const regex = /[^a-zA-Zа-яА-Я0-9 ]/g
     const regex = /[^a-zA-Zа-яА-Я0-9 \x00-\x7F]/g
     return str.replace(regex, '')
 }
 
 function filterSize(str) {
-    // const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F.]/g
     const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F\x00-\x7F.]/g
     return str.replace(regex, '')
 }
@@ -114,7 +112,6 @@ class ItemController {
             let i = item.spuId
             try {
                 await getPoizonItem(i, timeElapsed).then(async data => {
-                    // console.log(data)
                     try {
                         let isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                         if (!isItem) {
@@ -144,6 +141,14 @@ class ItemController {
                         for (let j = 0; j < data.skus.length; j++) {
                             if (data.skus[j] && validProperty(data.skus[j])) {
                                 const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
+                                if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
+                                    isItem.min_price = clientPrice
+                                    isItem.save()
+                                }
+                                if ((!isItem.max_price || isItem.min_price === null || isItem.max_price < clientPrice) && clientPrice) {
+                                    isItem.max_price = clientPrice
+                                    isItem.save()
+                                }
                                 const defaultSize = validProperty(data.skus[j])
                                 const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                 const sameSizes = await Size.findAll({ where: { size_default: sizeDef, item_uid: i.toString() } })
@@ -174,7 +179,6 @@ class ItemController {
                                                 if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
                                                     await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
                                                 }
-                                                // await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category, brand: isItem.brand })
                                             }
                                         }
                                     }
@@ -192,7 +196,6 @@ class ItemController {
                                             if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                                 const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                                 await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
-                                                // await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category, brand: isItem.brand })
                                             }
                                         }
                                     }
@@ -282,7 +285,6 @@ class ItemController {
                                         const defaultTemplate = list[0].sizeValue
                                         const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                         for (let k of list) {
-                                            // const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                             if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                                 const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                                 const isSize = await Size.findOne({ where: { size, size_type: k.sizeKey, size_default: sizeDef, item_uid: i.toString() } })
@@ -291,7 +293,6 @@ class ItemController {
                                                     if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
                                                         await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
                                                     }
-                                                    // await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category, brand: isItem.brand })
                                                 }
                                             }
                                         }
@@ -309,7 +310,6 @@ class ItemController {
                                                 if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                                     const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                                     await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
-                                                    // await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category, brand: isItem.brand })
                                                 }
                                             }
                                         }
@@ -447,7 +447,6 @@ class ItemController {
                                     const defaultTemplate = list[0].sizeValue
                                     const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                     for (let k of list) {
-                                        // const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                         if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                             const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                             const isSize = await Size.findOne({ where: { size, size_type: k.sizeKey, size_default: sizeDef, item_uid: i.toString() } })
@@ -456,7 +455,6 @@ class ItemController {
                                                 if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
                                                     await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
                                                 }
-                                                // await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category, brand: item.brand })
                                             } else if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
                                                 const isDefaultSize = await Size.findOne({ where: { size, size_type: 'EU', size_default: sizeDef, item_uid: i.toString() } })
                                                 if (!isDefaultSize) {
@@ -479,7 +477,6 @@ class ItemController {
                                             if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                                 const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                                 await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
-                                                // await Size.create({ size: k.sizeValue[defaultIndex], price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: defaultSize, item_category: category, brand: item.brand })
                                             }
                                         }
                                     }
@@ -543,21 +540,6 @@ class ItemController {
             for (let i = 0; i < items.length; i++) {
                 const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
                 items[i].dataValues.img = img.dataValues.img
-                // const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
-                // let minPrice = 1000000000
-                // for (let j = 0; j < prices.length; j++) {
-                //     if (prices[j].dataValues.price < minPrice) {
-                //         minPrice = prices[j].dataValues.price
-                //     }
-                // }
-                // items[i].dataValues.minPrice = minPrice
-                // let maxPrice = 0
-                // for (let j = 0; j < prices.length; j++) {
-                //     if (prices[j].dataValues.price > maxPrice) {
-                //         maxPrice = prices[j].dataValues.price
-                //     }
-                // }
-                // items[i].dataValues.maxPrice = maxPrice
             }
 
             items.sort((a, b) => b.orders - a.orders)
@@ -642,7 +624,6 @@ class ItemController {
                     ...(category && { item_category: category }),
                     size_type,
                     ...(sizes && { size: { [Op.in]: sizes } }),
-                    // ...(prices && { price: { [Op.gte]: Number(prices[0]) * 100 / course.value, [Op.lte]: Number(prices[1]) * 100 / course.value } }),
                     ...(prices && { price: { [Op.gte]: Number(prices[0]), [Op.lte]: Number(prices[1]) } }),
                 },
             })
@@ -667,86 +648,6 @@ class ItemController {
             } else if (brands) {
                 conditions = { ...(brands && { brand: { [Op.in]: brands } }) }
             }
-
-            // OLD
-
-            // let items = await Item.findAll({
-            //     where: {
-            //         ...(category && { category }),
-            //         ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
-            //         ...(brands && conditions),
-            //         ...(search && {
-            //             [Op.or]: [
-            //                 { name: { [Op.iLike]: `%${search}%` } },
-            //                 { brand: { [Op.iLike]: `%${search}%` } },
-            //                 { model: { [Op.iLike]: `%${search}%` } },
-            //                 { item_uid: { [Op.iLike]: `%${search}%` } },
-            //             ]
-            //         })
-            //     },
-            // })
-
-            // for (let i = 0; i < items.length; i++) {
-            //     const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
-            //     items[i].dataValues.img = img.dataValues.img
-            //     const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
-            //     let minPrice = 1000000000
-            //     for (let j = 0; j < prices.length; j++) {
-            //         if (prices[j].dataValues.price < minPrice) {
-            //             minPrice = prices[j].dataValues.price
-            //         }
-            //     }
-            //     items[i].dataValues.minPrice = minPrice
-            //     let maxPrice = 0
-            //     for (let j = 0; j < prices.length; j++) {
-            //         if (prices[j].dataValues.price > maxPrice) {
-            //             maxPrice = prices[j].dataValues.price
-            //         }
-            //     }
-            //     items[i].dataValues.maxPrice = maxPrice
-            // }
-
-            // switch (sort) {
-            //     case 'new':
-            //         items.sort((a, b) => b.createdAt - a.createdAt)
-            //         break
-
-            //     case 'old':
-            //         items.sort((a, b) => a.createdAt - b.createdAt)
-            //         break
-
-            //     case 'priceUp':
-            //         items.sort((a, b) => a.dataValues.minPrice - b.dataValues.minPrice)
-            //         break
-
-            //     case 'priceDown':
-            //         items.sort((a, b) => b.dataValues.minPrice - a.dataValues.minPrice)
-            //         break
-
-            //     case 'popular':
-            //         items.sort((a, b) => b.orders - a.orders)
-            //         break
-
-            //     default:
-            //         break
-            // }
-
-            // const paginatedItems = items.slice(offset, offset + limitClient)
-
-            // for (let i of items) {
-            //     const fav = await Fav.findAll({ where: { item_uid: i.dataValues.id } })
-            //     const cart = await Cart.findAll({ where: { item_uid: i.dataValues.item_uid } })
-            //     i.dataValues.fav = fav.length
-            //     i.dataValues.cart = cart.length
-            // }
-
-            // items = {
-            //     count: items.length,
-            //     rows: paginatedItems
-            // }
-
-            // OLD
-
 
             if (!sizes) {
                 let items = await Item.findAndCountAll({
@@ -797,7 +698,7 @@ class ItemController {
                     }
                     i.dataValues.price = minimal
                 }
-                
+
                 switch (sort) {
                     case 'priceUp':
                         items.sort((a, b) => a.dataValues.price - b.dataValues.price);
@@ -851,9 +752,75 @@ class ItemController {
                 conditions = { ...(brands && { brand: { [Op.in]: brands } }) }
             }
 
+            // old
+
+            // let items = await Item.findAll({
+            //     where: {
+            //         ...(category && { category }),
+            //         ...(brands && conditions),
+            //         ...(search && {
+            //             [Op.or]: [
+            //                 { name: { [Op.iLike]: `%${search}%` } },
+            //                 { brand: { [Op.iLike]: `%${search}%` } },
+            //                 { model: { [Op.iLike]: `%${search}%` } },
+            //                 { item_uid: { [Op.iLike]: `%${search}%` } },
+            //             ]
+            //         })
+            //     },
+            // })
+
+            // for (let i = 0; i < items.length; i++) {
+            //     const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
+            //     items[i].dataValues.img = img.dataValues.img
+            // }
+
+            // switch (sort) {
+            //     case 'new':
+            //         items.sort((a, b) => b.createdAt - a.createdAt);
+            //         break;
+
+            //     case 'old':
+            //         items.sort((a, b) => a.createdAt - b.createdAt);
+            //         break;
+
+            //     case 'priceUp':
+            //         items.sort((a, b) => a.dataValues.min_price - b.dataValues.min_price);
+            //         break;
+
+            //     case 'priceDown':
+            //         items.sort((a, b) => b.dataValues.min_price - a.dataValues.min_price);
+            //         break;
+
+            //     case 'popular':
+            //         items.sort((a, b) => b.orders - a.orders);
+            //         break;
+
+            //     default:
+            //         break;
+            // }
+
+            // const paginatedItems = items.slice(offset, offset + limitClient)
+
+            // for (let i of items) {
+            //     const fav = await Fav.findAll({ where: { item_uid: i.dataValues.id } })
+            //     const cart = await Cart.findAll({ where: { item_uid: i.dataValues.item_uid } })
+            //     i.dataValues.fav = fav.length
+            //     i.dataValues.cart = cart.length
+            // }
+
+            // items = {
+            //     count: items.length,
+            //     rows: paginatedItems
+            // }
+
+            // return res.json(items)
+
+            // new
+
             let items = await Item.findAll({
                 where: {
                     ...(category && { category }),
+                    // ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
                     ...(brands && conditions),
                     ...(search && {
                         [Op.or]: [
@@ -862,63 +829,30 @@ class ItemController {
                             { model: { [Op.iLike]: `%${search}%` } },
                             { item_uid: { [Op.iLike]: `%${search}%` } },
                         ]
-                    })
+                    }),
                 },
+                order: [['createdAt', 'DESC']],
             })
 
-            for (let i = 0; i < items.length; i++) {
-                const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
-                items[i].dataValues.img = img.dataValues.img
-                // const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
-                // let minPrice = 1000000000
-                // for (let j = 0; j < prices.length; j++) {
-                //     if (prices[j].dataValues.price < minPrice) {
-                //         minPrice = prices[j].dataValues.price
-                //     }
-                // }
-                // items[i].dataValues.minPrice = minPrice
-                // let maxPrice = 0
-                // for (let j = 0; j < prices.length; j++) {
-                //     if (prices[j].dataValues.price > maxPrice) {
-                //         maxPrice = prices[j].dataValues.price
-                //     }
-                // }
-                // items[i].dataValues.maxPrice = maxPrice
+            for (let i of items) {
+                let minimal = 100000000
+                i.dataValues.price = minimal
             }
 
             switch (sort) {
-                case 'new':
-                    items.sort((a, b) => b.createdAt - a.createdAt);
-                    break;
-
-                case 'old':
-                    items.sort((a, b) => a.createdAt - b.createdAt);
-                    break;
-
                 case 'priceUp':
-                    items.sort((a, b) => a.dataValues.min_price - b.dataValues.min_price);
-                    break;
+                    items.sort((a, b) => a.dataValues.price - b.dataValues.price);
+                    break
 
                 case 'priceDown':
-                    items.sort((a, b) => b.dataValues.min_price - a.dataValues.min_price);
-                    break;
-
-                case 'popular':
-                    items.sort((a, b) => b.orders - a.orders);
-                    break;
+                    items.sort((a, b) => b.dataValues.price - a.dataValues.price);
+                    break
 
                 default:
-                    break;
+                    break
             }
 
             const paginatedItems = items.slice(offset, offset + limitClient)
-
-            for (let i of items) {
-                const fav = await Fav.findAll({ where: { item_uid: i.dataValues.id } })
-                const cart = await Cart.findAll({ where: { item_uid: i.dataValues.item_uid } })
-                i.dataValues.fav = fav.length
-                i.dataValues.cart = cart.length
-            }
 
             items = {
                 count: items.length,
@@ -946,14 +880,6 @@ class ItemController {
                 } else {
                     const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
                     items[i].dataValues.img = img.dataValues.img
-                    // const prices = await Size.findAll({ where: { item_uid: items[i].dataValues.item_uid } })
-                    // let minPrice = 1000000000
-                    // for (let j = 0; j < prices.length; j++) {
-                    //     if (prices[j].dataValues.price < minPrice) {
-                    //         minPrice = prices[j].dataValues.price
-                    //     }
-                    // }
-                    // items[i].dataValues.minPrice = minPrice
                 }
             }
             return res.json(items)
