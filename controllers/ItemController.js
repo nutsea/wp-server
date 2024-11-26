@@ -3,6 +3,7 @@ const ApiError = require('../error/apiError')
 const { Op } = require('sequelize')
 const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonService')
 const { Sequelize } = require('../db')
+const os = require('os');
 
 function filterString(str) {
     const regex = /[^a-zA-Zа-яА-Я0-9 \x00-\x7F]/g
@@ -105,6 +106,8 @@ class ItemController {
     }
 
     async createByLink(req, res, next) {
+        console.log(`Free memory: ${os.freemem()} bytes`);
+        console.log(`Total memory: ${os.totalmem()} bytes`);
         try {
             const { link, category, timeElapsed, brand, model } = req.body
             const item = await getByLink(link)
