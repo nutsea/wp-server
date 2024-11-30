@@ -19,6 +19,8 @@ router.get('/ids', itemController.getByIds)
 router.get('/cart', itemController.getCartItems)
 router.get('/watched', itemController.getByIds)
 router.get('/brands', itemController.getBrandsAndModels)
+router.put('/watch', itemController.addWatch)
+router.get('/searchword', itemController.compareSearchWord)
 router.delete('/', adminMiddleware, itemController.delete)
 
 module.exports = router

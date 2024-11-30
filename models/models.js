@@ -14,7 +14,15 @@ const Item = sequelize.define('items', {
     min_price: { type: DataTypes.FLOAT },
     max_price: { type: DataTypes.FLOAT },
     fav: { type: DataTypes.INTEGER, defaultValue: 0 },
-    cart: { type: DataTypes.INTEGER, defaultValue: 0 }
+    cart: { type: DataTypes.INTEGER, defaultValue: 0 },
+    watch: { type: DataTypes.INTEGER, defaultValue: 0 },
+})
+
+const ModelWatch = sequelize.define('model_watch', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    brand: { type: DataTypes.STRING, allowNull: false },
+    model: { type: DataTypes.STRING, allowNull: false },
+    watch: { type: DataTypes.INTEGER, defaultValue: 0 },
 })
 
 const Photo = sequelize.define('photos', {
@@ -200,6 +208,7 @@ OrderPhoto.belongsTo(Order, { foreignKey: 'order_id' })
 module.exports = {
     Auth,
     Item,
+    ModelWatch,
     Photo,
     Size,
     User,
