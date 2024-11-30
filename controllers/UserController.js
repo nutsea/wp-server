@@ -30,11 +30,9 @@ class UserController {
     async checkUser(req, res, next) {
         try {
             const user = await User.findOne({ where: { id: req.user.id } })
-            // const token = generateJwt(req.user.id, req.user.phone, req.user.role)
             const token = generateJwt(req.user.id, req.user.chat_id, user.role)
             return res.json({ token, user })
         } catch (e) {
-            // console.log(e)
             return next(ApiError.forbidden(e))
         }
     }

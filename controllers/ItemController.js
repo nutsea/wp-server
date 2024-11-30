@@ -1,8 +1,9 @@
-const { Item, Photo, Size, Fav, Cart, Constants } = require('../models/models')
+const { Item, Photo, Size, Fav, Cart, Constants, ModelWatch } = require('../models/models')
 const ApiError = require('../error/apiError')
 const { Op } = require('sequelize')
 const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonService')
 const { Sequelize } = require('../db')
+const os = require('os');
 
 function filterString(str) {
     const regex = /[^a-zA-Zа-яА-Я0-9 \x00-\x7F]/g
@@ -105,6 +106,8 @@ class ItemController {
     }
 
     async createByLink(req, res, next) {
+        console.log(`Free memory: ${os.freemem()} bytes`);
+        console.log(`Total memory: ${os.totalmem()} bytes`);
         try {
             const { link, category, timeElapsed, brand, model } = req.body
             const item = await getByLink(link)
@@ -542,7 +545,7 @@ class ItemController {
                 items[i].dataValues.img = img.dataValues.img
             }
 
-            items.sort((a, b) => b.orders - a.orders)
+            items.sort((a, b) => b.watch - a.watch)
 
             let newItems = []
 
@@ -599,7 +602,7 @@ class ItemController {
                     break;
 
                 case 'popular':
-                    sortCondition = [['orders', 'DESC']]
+                    sortCondition = [['watch', 'DESC']]
                     break;
 
                 default:
@@ -956,6 +959,71 @@ class ItemController {
             const { brand, category } = req.query
             let models = await Item.findAll({ attributes: ['model'], group: ['model'], where: { brand, ...(category && { category }) } })
             return res.json(models)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async addWatch(req, res, next) {
+        try {
+            const { id } = req.body
+            let item = await Item.findOne({ where: { id } })
+            item.watch++
+            await item.save()
+            let model = await ModelWatch.findOne({ where: { brand: item.brand, model: item.model } })
+            if (!model) {
+                await ModelWatch.create({ brand: item.brand, model: item.model, watch: 1 })
+            } else {
+                model.watch++
+                await model.save()
+            }
+            return res.json(item)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async compareSearchWord(req, res, next) {
+        try {
+            const { search } = req.query
+            // let brands = await Item.findAll({
+            //     attributes: ['brand'], 
+            //     group: ['brand'],
+            //     where: { brand: { [Op.iLike]: `%${search}%` } }
+            // })
+            // const brands = await Item.findAll({
+            //     attributes: ['brand'],
+            //     group: ['brand'],
+            //     where: { brand: { [Op.iLike]: `%${search}%` } },
+            //     order: [
+            //         [Sequelize.literal(`CASE WHEN "brand" ILIKE '${search}%' THEN 0 ELSE 1 END`), 'ASC'],
+            //         ['brand', 'ASC'],
+            //     ]
+            // })
+            // const sequelize = new Sequelize('postgres://postgres:postgres@localhost:5432/poizon')
+            // await sequelize.query('CREATE EXTENSION IF NOT EXISTS pg_trgm;')
+            const brands = await Item.findAll({
+                attributes: ['brand'],
+                group: ['brand'],
+                where: Sequelize.literal(`SIMILARITY("brand", '${search}') > 0.2 OR "brand" ILIKE '%${search}%'`),
+                order: [
+                    [Sequelize.literal(`CASE WHEN "brand" ILIKE '${search}%' THEN 0 ELSE 1 END`), 'ASC'],
+                    [Sequelize.literal(`SIMILARITY("brand", '${search}')`), 'DESC'],
+                    ['brand', 'ASC'],
+                ]
+            })
+            let formattedBrands = brands.map(brand => ({ name: brand.dataValues.brand, type: 'brand' }))
+            let models = await ModelWatch.findAll({
+                attributes: ['model', 'brand', 'watch'],
+                group: ['model', 'brand', 'watch'],
+                where: Sequelize.literal(`SIMILARITY("model", '${search}') > 0.2 OR "model" ILIKE '%${search}%'`),
+                order: [['watch', 'DESC']]
+            })
+            let formattedModels = models.map(model => ({ name: model.dataValues.model, type: 'model', brand: model.dataValues.brand }))
+            let match = formattedBrands.concat(formattedModels)
+            return res.json(match)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
