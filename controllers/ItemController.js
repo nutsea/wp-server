@@ -98,6 +98,10 @@ class ItemController {
         try {
             const { name, item_uid, category, brand, model, orders } = req.body
             const item = await Item.create({ name, item_uid, category, brand, model, orders })
+            let hasWatch = await ModelWatch.findOne({ where: { brand, model } })
+            if (!hasWatch) {
+                await ModelWatch.create({ brand, model })
+            }
             return res.json(item)
         } catch (e) {
             console.log(e)
@@ -124,6 +128,10 @@ class ItemController {
                                 isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, orders: 0 })
                             }
                             items.push(isItem)
+                            let hasWatch = await ModelWatch.findOne({ where: { brand, model } })
+                            if (!hasWatch) {
+                                await ModelWatch.create({ brand, model })
+                            }
                         }
                         console.log(1, isItem.img)
                         for (let j of data.image.spuImage.images) {
@@ -237,6 +245,10 @@ class ItemController {
                                     isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, orders: 0 })
                                 }
                                 items.push(isItem)
+                                let hasWatch = await ModelWatch.findOne({ where: { brand, model } })
+                                if (!hasWatch) {
+                                    await ModelWatch.create({ brand, model })
+                                }
                             }
                             isItem.min_price = 100000000
                             isItem.max_price = 0
@@ -1024,6 +1036,27 @@ class ItemController {
             let formattedModels = models.map(model => ({ name: model.dataValues.model, type: 'model', brand: model.dataValues.brand }))
             let match = formattedBrands.concat(formattedModels)
             return res.json(match)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async createAllWatches(req, res, next) {
+        try {
+            const { category } = req.body
+            const models = await Item.findAll({
+                attributes: ['brand', 'model'],
+                group: ['brand', 'model'],
+                where: { ...(category && { category }) }
+            })
+            for (let i of models) {
+                let hasWatch = await ModelWatch.findOne({ where: { brand: i.brand, model: i.model } })
+                if (!hasWatch) {
+                    await ModelWatch.create({ brand: i.brand, model: i.model })
+                }
+            }
+            return res.json(models)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
