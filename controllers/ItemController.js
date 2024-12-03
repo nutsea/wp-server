@@ -1026,14 +1026,14 @@ class ItemController {
                     ['brand', 'ASC'],
                 ]
             })
-            let formattedBrands = brands.map(brand => ({ name: brand.dataValues.brand, type: 'brand' }))
+            let formattedBrands = brands.map(brand => ({ type: 'brand', brand: brand.dataValues.brand }))
             let models = await ModelWatch.findAll({
                 attributes: ['model', 'brand', 'watch'],
                 group: ['model', 'brand', 'watch'],
                 where: Sequelize.literal(`SIMILARITY("model", '${search}') > 0.2 OR "model" ILIKE '%${search}%'`),
                 order: [['watch', 'DESC']]
             })
-            let formattedModels = models.map(model => ({ name: model.dataValues.model, type: 'model', brand: model.dataValues.brand }))
+            let formattedModels = models.map(model => ({ type: 'model', brand: model.dataValues.brand, model: model.dataValues.model, }))
             let match = formattedBrands.concat(formattedModels)
             return res.json(match)
         } catch (e) {
