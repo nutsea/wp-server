@@ -10,6 +10,7 @@ router.put('/updatebrandmodel', adminMiddleware, itemController.updateBrandAndMo
 router.delete('/clearnonvalidsizes', itemController.clearNonValidSizes)
 router.get('/spu', adminMiddleware, itemController.getSpuIds)
 router.get('/cost', itemController.checkCost)
+router.get('/size', itemController.checkSize)
 router.get('/all', itemController.getAll)
 router.get('/alladmin', itemController.getAllAdmin)
 router.get('/popular', itemController.getPopular)

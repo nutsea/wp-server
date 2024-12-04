@@ -29,16 +29,18 @@ class CartController {
                         item.dataValues.img = img.dataValues.img
                         item.dataValues.size = i.size
                         item.dataValues.ship = i.ship
-                        // newItems.push(item)
                         const price = await Size.findOne({ where: { item_uid: item.dataValues.item_uid, size: item.dataValues.size } })
                         if (price) {
                             newItems.push(item)
+                        } else {
+                            await i.destroy()
                         }
+                    } else {
+                        await i.destroy()
                     }
                 }
                 for (let i = 0; i < newItems.length; i++) {
                     const price = await Size.findOne({ where: { item_uid: newItems[i].dataValues.item_uid, size: newItems[i].dataValues.size } })
-                    // newItems[i].dataValues.price = price.dataValues.price
                     if (price) {
                         newItems[i].dataValues.price = price.dataValues.price
                     }
