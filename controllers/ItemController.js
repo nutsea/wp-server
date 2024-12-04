@@ -510,6 +510,15 @@ class ItemController {
         }
     }
 
+    async checkSize(req, res, next) {
+        try {
+            const { id, size } = req.query
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
     async getOne(req, res, next) {
         try {
             const { id } = req.query
@@ -547,42 +556,26 @@ class ItemController {
 
     async getPopular(req, res, next) {
         try {
-            let items = await Item.findAll()
-            let pageClient = 1
-            let limitClient = 10
-            let offset = Number(pageClient) * Number(limitClient) - Number(limitClient)
+            let items = await Item.findAll({
+                order: [['watch', 'DESC']],
+                limit: 10
+            })
 
             for (let i = 0; i < items.length; i++) {
                 const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
                 items[i].dataValues.img = img.dataValues.img
             }
 
-            items.sort((a, b) => b.watch - a.watch)
-
-            let newItems = []
-
-            let check = 0
-
-            while (newItems.length < limitClient && check < items.length) {
-                const isExist = await Size.findOne({ where: { item_uid: items[check].dataValues.item_uid } })
-                if (isExist) {
-                    newItems.push(items[check])
-                }
-                check++
-            }
-
-            const paginatedItems = newItems.slice(offset, offset + limitClient)
-
-            for (let i of newItems) {
+            for (let i of items) {
                 const fav = await Fav.findAll({ where: { item_uid: i.dataValues.id } })
                 const cart = await Cart.findAll({ where: { item_uid: i.dataValues.item_uid } })
                 i.dataValues.fav = fav.length
                 i.dataValues.cart = cart.length
             }
 
-            newItems = {
-                count: newItems.length,
-                rows: paginatedItems
+            let newItems = {
+                count: items.length,
+                rows: items
             }
 
             return res.json(newItems)
