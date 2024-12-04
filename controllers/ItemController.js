@@ -110,8 +110,6 @@ class ItemController {
     }
 
     async createByLink(req, res, next) {
-        console.log(`Free memory: ${os.freemem()} bytes`);
-        console.log(`Total memory: ${os.totalmem()} bytes`);
         try {
             const { link, category, timeElapsed, brand, model } = req.body
             const item = await getByLink(link)
@@ -133,7 +131,6 @@ class ItemController {
                                 await ModelWatch.create({ brand, model })
                             }
                         }
-                        console.log(1, isItem.img)
                         for (let j of data.image.spuImage.images) {
                             if (!isItem.img) {
                                 isItem.img = j.url
@@ -253,7 +250,6 @@ class ItemController {
                             isItem.min_price = 100000000
                             isItem.max_price = 0
                             for (let j of data.image.spuImage.images) {
-                                console.log(1, isItem.img)
                                 if (!isItem.img) {
                                     isItem.img = j.url
                                     await isItem.save()
@@ -425,12 +421,9 @@ class ItemController {
                             if (j.sizeKey === '适合脚长') j.sizeKey = 'SM'
                             j.sizeKey = filterString(j.sizeKey)
                             j.sizeValue = convertStringToArray(j.sizeValue)
-                            console.log(j.sizeKey)
                         }
                         for (let j = 0; j < data.skus.length; j++) {
-                            console.log(222222)
                             if (data.skus[j] && validProperty(data.skus[j])) {
-                                console.log(333333)
                                 const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                 if ((!item.min_price || item.min_price === null || item.min_price > clientPrice) && clientPrice) {
                                     item.min_price = clientPrice
@@ -444,7 +437,6 @@ class ItemController {
                                 const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
                                 const sameSizes = await Size.findAll({ where: { size_default: sizeDef, item_uid: i.toString() } })
                                 if (sameSizes && sameSizes.length > 0) {
-                                    console.log(444444)
                                     for (let k of sameSizes) {
                                         if (clientPrice) {
                                             k.price = clientPrice
@@ -498,6 +490,10 @@ class ItemController {
                                 }
                             }
                         }
+                        for (let i of sizes) {
+                            const wasParsed = !data.skus.some(sku => validProperty(sku) == i.size_default)
+                            if (wasParsed) await i.destroy()
+                        }
                     })
                 } catch (e) {
                     console.log(e)
@@ -512,7 +508,12 @@ class ItemController {
 
     async checkSize(req, res, next) {
         try {
-            const { id, size } = req.query
+            const { item_uid, size } = req.query
+            const item = await Size.findOne({ where: { item_uid, size } })
+            if (!item) {
+                return next(ApiError.badRequest(e.message))
+            }
+            return res.json(item)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
@@ -760,75 +761,9 @@ class ItemController {
                 conditions = { ...(brands && { brand: { [Op.in]: brands } }) }
             }
 
-            // old
-
-            // let items = await Item.findAll({
-            //     where: {
-            //         ...(category && { category }),
-            //         ...(brands && conditions),
-            //         ...(search && {
-            //             [Op.or]: [
-            //                 { name: { [Op.iLike]: `%${search}%` } },
-            //                 { brand: { [Op.iLike]: `%${search}%` } },
-            //                 { model: { [Op.iLike]: `%${search}%` } },
-            //                 { item_uid: { [Op.iLike]: `%${search}%` } },
-            //             ]
-            //         })
-            //     },
-            // })
-
-            // for (let i = 0; i < items.length; i++) {
-            //     const img = await Photo.findOne({ where: { item_uid: items[i].dataValues.item_uid } })
-            //     items[i].dataValues.img = img.dataValues.img
-            // }
-
-            // switch (sort) {
-            //     case 'new':
-            //         items.sort((a, b) => b.createdAt - a.createdAt);
-            //         break;
-
-            //     case 'old':
-            //         items.sort((a, b) => a.createdAt - b.createdAt);
-            //         break;
-
-            //     case 'priceUp':
-            //         items.sort((a, b) => a.dataValues.min_price - b.dataValues.min_price);
-            //         break;
-
-            //     case 'priceDown':
-            //         items.sort((a, b) => b.dataValues.min_price - a.dataValues.min_price);
-            //         break;
-
-            //     case 'popular':
-            //         items.sort((a, b) => b.orders - a.orders);
-            //         break;
-
-            //     default:
-            //         break;
-            // }
-
-            // const paginatedItems = items.slice(offset, offset + limitClient)
-
-            // for (let i of items) {
-            //     const fav = await Fav.findAll({ where: { item_uid: i.dataValues.id } })
-            //     const cart = await Cart.findAll({ where: { item_uid: i.dataValues.item_uid } })
-            //     i.dataValues.fav = fav.length
-            //     i.dataValues.cart = cart.length
-            // }
-
-            // items = {
-            //     count: items.length,
-            //     rows: paginatedItems
-            // }
-
-            // return res.json(items)
-
-            // new
-
             let items = await Item.findAll({
                 where: {
                     ...(category && { category }),
-                    // ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
                     ...(brands && conditions),
                     ...(search && {
                         [Op.or]: [
@@ -993,22 +928,6 @@ class ItemController {
     async compareSearchWord(req, res, next) {
         try {
             const { search } = req.query
-            // let brands = await Item.findAll({
-            //     attributes: ['brand'], 
-            //     group: ['brand'],
-            //     where: { brand: { [Op.iLike]: `%${search}%` } }
-            // })
-            // const brands = await Item.findAll({
-            //     attributes: ['brand'],
-            //     group: ['brand'],
-            //     where: { brand: { [Op.iLike]: `%${search}%` } },
-            //     order: [
-            //         [Sequelize.literal(`CASE WHEN "brand" ILIKE '${search}%' THEN 0 ELSE 1 END`), 'ASC'],
-            //         ['brand', 'ASC'],
-            //     ]
-            // })
-            // const sequelize = new Sequelize('postgres://postgres:postgres@localhost:5432/poizon')
-            // await sequelize.query('CREATE EXTENSION IF NOT EXISTS pg_trgm;')
             const brands = await Item.findAll({
                 attributes: ['brand'],
                 group: ['brand'],
