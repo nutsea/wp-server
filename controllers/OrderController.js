@@ -25,6 +25,8 @@ const messages = {
     7: '📦 Ваш заказ прибыл в Москву\n\nНа данный момент заказ проходит сортировку и совсем скоро поедет к вам! 🙃',
     8: '🚛 Ваш заказ передан в CDEK\n\nТрек номер для отслеживания уже доступен на сайте в разделе "Мои заказы"',
     9: '💜 Спасибо за заказ!\n\nВидим, что Вы его забрали и надеемся, что Вам всё понравилось! Оставьте пожалуйста отзыв в ВК отзывах 👉🏼 [vk.com/reviews-218074236](https://vk.com/reviews-218074236)\n\nИ если не затруднит продублируйте здесь пожалуйста 👉🏼 [vk.com/topic-218074236_48983779](https://vk.com/topic-218074236_48983779)\n\nБлагодарим заранее 🫶🏼',
+    start10: '❗️Ваш заказ ',
+    end10: ' требует уточнений.\n\nНапишите, пожалуйста, нашему [менеджеру](http://t.me/kicksie_manager) для уточнений деталей заказа.',
     notReview: '💜 Спасибо за заказ!\n\nВидим, что Вы его забрали и надеемся, что Вам всё понравилось!',
     startContinue: '\nСвяжитесь с нашим менеджером [@kicksie_manager](https://t.me/kicksie_manager) для уточнения деталей заказа 🙂'
 }
@@ -195,7 +197,8 @@ class OrderController {
                             { address: { [Op.iLike]: `%${search}%` } },
                         ]
                     })
-                }
+                },
+                order: [['createdAt', 'ASC']]
             })
             for (let i of orders) {
                 await OrderItem.findAll({ where: { order_id: i.id } }).then(data => {
@@ -229,7 +232,8 @@ class OrderController {
                             { promo_code: { [Op.iLike]: `%${search}%` } }
                         ]
                     })
-                }
+                },
+                order: [['createdAt', 'ASC']]
             })
             for (let i of orders) {
                 await OrderItem.findAll({ where: { order_id: i.id } }).then(data => {
@@ -488,6 +492,15 @@ class OrderController {
                     break
 
                 case 10:
+                    if (order.status !== status && client && client.chat_id) {
+                        let orderNum
+                        if (order.paid > 0) {
+                            orderNum = 'WP' + order.id
+                        } else {
+                            orderNum = 'R' + order.id
+                        }
+                        scheduleMessage(client.chat_id, messages.start10 + orderNum + messages.end10)
+                    }
                     order.status = status
                     break
 
@@ -770,6 +783,15 @@ class OrderController {
                     break
 
                 case 10:
+                    if (order.status !== status && client && client.chat_id) {
+                        let orderNum
+                        if (order.paid > 0) {
+                            orderNum = 'WP' + order.id
+                        } else {
+                            orderNum = 'R' + order.id
+                        }
+                        scheduleMessage(client.chat_id, messages.start10 + orderNum + messages.end10)
+                    }
                     order.status = status
                     break
 
