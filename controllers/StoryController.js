@@ -35,6 +35,36 @@ class StoryController {
             return next(ApiError.badRequest(e.message))
         }
     }
+
+    async deleteOne(req, res, next) {
+        try {
+            const { id } = req.query
+            const story = await Story.findOne({ where: { id } })
+            if (story) {
+                await story.destroy()
+            }
+            return res.json(story)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async deleteType(req, res, next) {
+        try {
+            const { type } = req.query
+            const stories = await Story.findAll({ where: { type } })
+            if (stories) {
+                for (let i of stories) {
+                    await i.destroy()
+                }
+            }
+            return res.json(stories)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
 }
 
 module.exports = new StoryController()
