@@ -41,6 +41,14 @@ class StoryController {
             const { id } = req.query
             const story = await Story.findOne({ where: { id } })
             if (story) {
+                const filePath = path.resolve(__dirname, '..', 'static', story.img)
+                fs.unlink(filePath, (e) => {
+                    if (e) {
+                        console.log('Ошибка при удалении файла:', e)
+                    } else {
+                        console.log('Файл успешно удален')
+                    }
+                })
                 await story.destroy()
             }
             return res.json(story)
@@ -56,6 +64,14 @@ class StoryController {
             const stories = await Story.findAll({ where: { type } })
             if (stories) {
                 for (let i of stories) {
+                    const filePath = path.resolve(__dirname, '..', 'static', i.img)
+                    fs.unlink(filePath, (e) => {
+                        if (e) {
+                            console.log('Ошибка при удалении файла:', e)
+                        } else {
+                            console.log('Файл успешно удален')
+                        }
+                    })
                     await i.destroy()
                 }
             }
