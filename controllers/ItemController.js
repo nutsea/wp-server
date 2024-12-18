@@ -658,6 +658,12 @@ class ItemController {
                 conditions = { ...(brands && { brand: { [Op.in]: brands } }) }
             }
 
+            const formattedSearch = search
+                .split(' ')
+                .filter(word => word.trim() !== '')
+                .map(word => `${word}:*`)
+                .join(' & ')
+
             if (!sizes) {
                 let items = await Item.findAndCountAll({
                     where: {
@@ -666,14 +672,10 @@ class ItemController {
                         ...(brands && conditions),
                         ...(search && {
                             [Op.or]: Sequelize.literal(`
-                                SIMILARITY("name", '${search}') > 0.2 OR 
-                                "name" ILIKE '%${search}%' OR 
-                                SIMILARITY("brand", '${search}') > 0.2 OR 
-                                "brand" ILIKE '%${search}%' OR 
-                                SIMILARITY("model", '${search}') > 0.2 OR 
-                                "model" ILIKE '%${search}%' OR 
-                                SIMILARITY("item_uid", '${search}') > 0.2 OR 
-                                "item_uid" ILIKE '%${search}%'
+                                to_tsvector('simple', "name") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                                to_tsvector('simple', "brand") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                                to_tsvector('simple', "model") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                                to_tsvector('simple', "item_uid") @@ to_tsquery('simple', '${formattedSearch}')
                             `)
                         }),
                     },
@@ -691,14 +693,10 @@ class ItemController {
                         ...(brands && conditions),
                         ...(search && {
                             [Op.or]: Sequelize.literal(`
-                                SIMILARITY("name", '${search}') > 0.2 OR 
-                                "name" ILIKE '%${search}%' OR 
-                                SIMILARITY("brand", '${search}') > 0.2 OR 
-                                "brand" ILIKE '%${search}%' OR 
-                                SIMILARITY("model", '${search}') > 0.2 OR 
-                                "model" ILIKE '%${search}%' OR 
-                                SIMILARITY("item_uid", '${search}') > 0.2 OR 
-                                "item_uid" ILIKE '%${search}%'
+                                to_tsvector('simple', "name") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                                to_tsvector('simple', "brand") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                                to_tsvector('simple', "model") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                                to_tsvector('simple', "item_uid") @@ to_tsquery('simple', '${formattedSearch}')
                             `)
                         }),
                     },
@@ -769,20 +767,22 @@ class ItemController {
                 conditions = { ...(brands && { brand: { [Op.in]: brands } }) }
             }
 
+            const formattedSearch = search
+                .split(' ')
+                .filter(word => word.trim() !== '')
+                .map(word => `${word}:*`)
+                .join(' & ')
+
             let items = await Item.findAll({
                 where: {
                     ...(category && { category }),
                     ...(brands && conditions),
                     ...(search && {
                         [Op.or]: Sequelize.literal(`
-                            SIMILARITY("name", '${search}') > 0.2 OR 
-                            "name" ILIKE '%${search}%' OR 
-                            SIMILARITY("brand", '${search}') > 0.2 OR 
-                            "brand" ILIKE '%${search}%' OR 
-                            SIMILARITY("model", '${search}') > 0.2 OR 
-                            "model" ILIKE '%${search}%' OR 
-                            SIMILARITY("item_uid", '${search}') > 0.2 OR 
-                            "item_uid" ILIKE '%${search}%'
+                            to_tsvector('simple', "name") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                            to_tsvector('simple', "brand") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                            to_tsvector('simple', "model") @@ to_tsquery('simple', '${formattedSearch}') OR 
+                            to_tsvector('simple', "item_uid") @@ to_tsquery('simple', '${formattedSearch}')
                         `)
                     }),
                 },
