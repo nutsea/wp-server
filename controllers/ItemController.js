@@ -665,12 +665,16 @@ class ItemController {
                         ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
                         ...(brands && conditions),
                         ...(search && {
-                            [Op.or]: [
-                                { name: { [Op.iLike]: `%${search}%` } },
-                                { brand: { [Op.iLike]: `%${search}%` } },
-                                { model: { [Op.iLike]: `%${search}%` } },
-                                { item_uid: { [Op.iLike]: `%${search}%` } },
-                            ]
+                            [Op.or]: Sequelize.literal(`
+                                SIMILARITY("name", '${search}') > 0.2 OR 
+                                "name" ILIKE '%${search}%' OR 
+                                SIMILARITY("brand", '${search}') > 0.2 OR 
+                                "brand" ILIKE '%${search}%' OR 
+                                SIMILARITY("model", '${search}') > 0.2 OR 
+                                "model" ILIKE '%${search}%' OR 
+                                SIMILARITY("item_uid", '${search}') > 0.2 OR 
+                                "item_uid" ILIKE '%${search}%'
+                            `)
                         }),
                     },
                     order: sortCondition.length ? sortCondition : [['createdAt', 'ASC']],
@@ -686,12 +690,16 @@ class ItemController {
                         ...(sizesDB && { item_uid: { [Op.in]: sizesDB.map(item => item.item_uid) } }),
                         ...(brands && conditions),
                         ...(search && {
-                            [Op.or]: [
-                                { name: { [Op.iLike]: `%${search}%` } },
-                                { brand: { [Op.iLike]: `%${search}%` } },
-                                { model: { [Op.iLike]: `%${search}%` } },
-                                { item_uid: { [Op.iLike]: `%${search}%` } },
-                            ]
+                            [Op.or]: Sequelize.literal(`
+                                SIMILARITY("name", '${search}') > 0.2 OR 
+                                "name" ILIKE '%${search}%' OR 
+                                SIMILARITY("brand", '${search}') > 0.2 OR 
+                                "brand" ILIKE '%${search}%' OR 
+                                SIMILARITY("model", '${search}') > 0.2 OR 
+                                "model" ILIKE '%${search}%' OR 
+                                SIMILARITY("item_uid", '${search}') > 0.2 OR 
+                                "item_uid" ILIKE '%${search}%'
+                            `)
                         }),
                     },
                     order: sortCondition.length ? sortCondition : [['createdAt', 'ASC']],
@@ -766,12 +774,16 @@ class ItemController {
                     ...(category && { category }),
                     ...(brands && conditions),
                     ...(search && {
-                        [Op.or]: [
-                            { name: { [Op.iLike]: `%${search}%` } },
-                            { brand: { [Op.iLike]: `%${search}%` } },
-                            { model: { [Op.iLike]: `%${search}%` } },
-                            { item_uid: { [Op.iLike]: `%${search}%` } },
-                        ]
+                        [Op.or]: Sequelize.literal(`
+                            SIMILARITY("name", '${search}') > 0.2 OR 
+                            "name" ILIKE '%${search}%' OR 
+                            SIMILARITY("brand", '${search}') > 0.2 OR 
+                            "brand" ILIKE '%${search}%' OR 
+                            SIMILARITY("model", '${search}') > 0.2 OR 
+                            "model" ILIKE '%${search}%' OR 
+                            SIMILARITY("item_uid", '${search}') > 0.2 OR 
+                            "item_uid" ILIKE '%${search}%'
+                        `)
                     }),
                 },
                 order: [['createdAt', 'DESC']],
