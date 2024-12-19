@@ -658,11 +658,15 @@ class ItemController {
                 conditions = { ...(brands && { brand: { [Op.in]: brands } }) }
             }
 
-            const formattedSearch = search
-                .split(' ')
-                .filter(word => word.trim() !== '')
-                .map(word => `${word}:*`)
-                .join(' & ')
+            let formattedSearch
+
+            if (search) {
+                formattedSearch = search
+                    .split(' ')
+                    .filter(word => word.trim() !== '')
+                    .map(word => `${word}:*`)
+                    .join(' & ')
+            }
 
             if (!sizes) {
                 let items = await Item.findAndCountAll({
@@ -767,11 +771,15 @@ class ItemController {
                 conditions = { ...(brands && { brand: { [Op.in]: brands } }) }
             }
 
-            const formattedSearch = search
-                .split(' ')
-                .filter(word => word.trim() !== '')
-                .map(word => `${word}:*`)
-                .join(' & ')
+            let formattedSearch
+
+            if (search) {
+                formattedSearch = search
+                    .split(' ')
+                    .filter(word => word.trim() !== '')
+                    .map(word => `${word}:*`)
+                    .join(' & ')
+            }
 
             let items = await Item.findAll({
                 where: {
