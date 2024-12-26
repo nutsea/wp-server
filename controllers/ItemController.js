@@ -93,6 +93,8 @@ const validProperty = (data) => {
     return null
 }
 
+const replaceValid = value => value.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+
 class ItemController {
     async create(req, res, next) {
         try {
@@ -491,7 +493,7 @@ class ItemController {
                             }
                         }
                         for (let i of sizes) {
-                            const wasParsed = !data.skus.some(sku => validProperty(sku) == i.size_default)
+                            const wasParsed = !data.skus.some(sku => replaceValid(validProperty(sku)) == i.size_default)
                             if (wasParsed) await i.destroy()
                         }
                     })
