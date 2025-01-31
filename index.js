@@ -28,7 +28,7 @@ app.use(cors())
 app.use(express.json())
 app.use(express.static(path.resolve(__dirname, 'static')))
 app.use(fileUpload({}))
-app.use('/api', router)
+app.use('/web', router)
 app.use((err, req, res, next) => {
     res.status(err.status || 500).json({
         message: err.message || 'Произошла ошибка'
