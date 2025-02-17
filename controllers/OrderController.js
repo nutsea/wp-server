@@ -81,13 +81,14 @@ class OrderController {
             if (client.client !== null) {
                 newName = client.client
             }
-            // if (client.surname !== null) {
-            //     newName += ' ' + client.surname
-            // }
             if (newName.length === 0) {
                 newName = recipient.split(' ', 2)[0]
             }
-            const order = await Order.create({ name: newName, social_media: client.link, social_media_type: client.link_type, checked_price, recipient, phone, address, ship_type, delivery_cost: delivery_cost * items.length, is_split, first_pay, second_pay, course, fee: fee * items.length, cost, discount_cost, discount, promo_code, client_id: req.user.id })
+            let deliverySum = 0
+            for (let i of items) {
+                deliverySum += i.delivery_cost
+            }
+            const order = await Order.create({ name: newName, social_media: client.link, social_media_type: client.link_type, checked_price, recipient, phone, address, ship_type, delivery_cost: deliverySum, is_split, first_pay, second_pay, course, fee: fee * items.length, cost, discount_cost, discount, promo_code, client_id: req.user.id })
             for (let i of items) {
                 await Photo.findOne({ where: { item_uid: i.item_uid } }).then(async data => {
                     await Item.findOne({ where: { item_uid: i.item_uid } }).then(async item => {
