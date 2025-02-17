@@ -3,6 +3,7 @@ const ApiError = require('../error/apiError')
 const { Op } = require('sequelize')
 const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonService')
 const { Sequelize } = require('../db')
+const sequelize = require('../db')
 const os = require('os');
 
 function filterString(str) {
@@ -98,8 +99,8 @@ const replaceValid = value => value.replace('½', ' 1/2').replace('⅔', ' 2/3')
 class ItemController {
     async create(req, res, next) {
         try {
-            const { name, item_uid, category, brand, model, orders } = req.body
-            const item = await Item.create({ name, item_uid, category, brand, model, orders })
+            const { name, item_uid, category, brand, model, orders, declension } = req.body
+            const item = await Item.create({ name, item_uid, category, brand, model, declension, orders })
             let hasWatch = await ModelWatch.findOne({ where: { brand, model } })
             if (!hasWatch) {
                 await ModelWatch.create({ brand, model })
@@ -113,7 +114,7 @@ class ItemController {
 
     async createByLink(req, res, next) {
         try {
-            const { link, category, timeElapsed, brand, model } = req.body
+            const { link, category, timeElapsed, brand, model, declension, fast_ship, slow_ship } = req.body
             const item = await getByLink(link)
             let items = []
             let i = item.spuId
@@ -123,14 +124,30 @@ class ItemController {
                         let isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                         if (!isItem) {
                             if (filterString(data.detail.structureTitle).length > 0) {
-                                isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
+                                isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, declension, orders: 0 })
                             } else {
-                                isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, orders: 0 })
+                                isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, declension, orders: 0 })
                             }
                             items.push(isItem)
                             let hasWatch = await ModelWatch.findOne({ where: { brand, model } })
                             if (!hasWatch) {
                                 await ModelWatch.create({ brand, model })
+                            }
+                        }
+                        if (category !== 'shoes') {
+                            const fastShip = await Constants.findOne({ where: { name: brand, type: 'express' } })
+                            if (fastShip) {
+                                fastShip.value = fast_ship
+                                await fastShip.save()
+                            } else {
+                                await Constants.create({ name: category, value: fast_ship, type: 'express' })
+                            }
+                            const slowShip = await Constants.findOne({ where: { name: brand, type: 'standart' } })
+                            if (slowShip) {
+                                slowShip.value = slow_ship
+                                await slowShip.save()
+                            } else {
+                                await Constants.create({ name: category, value: slow_ship, type: 'standart' })
                             }
                         }
                         for (let j of data.image.spuImage.images) {
@@ -229,7 +246,7 @@ class ItemController {
 
     async createBySpuId(req, res, next) {
         try {
-            const { spuIdArr, category, timeElapsed, brand, model } = req.body
+            const { spuIdArr, category, timeElapsed, brand, model, declension, fast_ship, slow_ship } = req.body
             let items = []
             let error = false
             for (let i of spuIdArr) {
@@ -239,14 +256,30 @@ class ItemController {
                             let isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                             if (!isItem) {
                                 if (filterString(data.detail.structureTitle).length > 0) {
-                                    isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, orders: 0 })
+                                    isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, declension, orders: 0 })
                                 } else {
-                                    isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, orders: 0 })
+                                    isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, declension, orders: 0 })
                                 }
                                 items.push(isItem)
                                 let hasWatch = await ModelWatch.findOne({ where: { brand, model } })
                                 if (!hasWatch) {
                                     await ModelWatch.create({ brand, model })
+                                }
+                            }
+                            if (category !== 'shoes') {
+                                const fastShip = await Constants.findOne({ where: { name: brand, type: 'express' } })
+                                if (fastShip) {
+                                    fastShip.value = fast_ship
+                                    await fastShip.save()
+                                } else {
+                                    await Constants.create({ name: category, value: fast_ship, type: 'express' })
+                                }
+                                const slowShip = await Constants.findOne({ where: { name: brand, type: 'standart' } })
+                                if (slowShip) {
+                                    slowShip.value = slow_ship
+                                    await slowShip.save()
+                                } else {
+                                    await Constants.create({ name: category, value: slow_ship, type: 'standart' })
                                 }
                             }
                             isItem.min_price = 100000000
@@ -890,7 +923,25 @@ class ItemController {
     async getBrandsAndModels(req, res, next) {
         try {
             const { category } = req.query
-            let brands = await Item.findAll({ attributes: ['brand'], group: ['brand'], where: { ...(category && { category }) } })
+            // let brands = await Item.findAll({ attributes: ['brand'], group: ['brand'], where: { ...(category && { category }) } })
+            // let brands = await Item.findAll({
+            //     attributes: [
+            //         [sequelize.fn('MIN', sequelize.col('item_uid')), 'item_uid'],
+            //         [sequelize.fn('MIN', sequelize.col('fast_ship')), 'fast_ship'],
+            //         [sequelize.fn('MIN', sequelize.col('slow_ship')), 'slow_ship'],
+            //         'brand'
+            //     ],
+            //     group: ['brand'],
+            //     where: { ...(category && { category }) }
+            // })
+            let brands = await Item.findAll({
+                attributes: [
+                    [sequelize.fn('MIN', sequelize.col('item_uid')), 'item_uid'],
+                    'brand'
+                ],
+                group: ['brand'],
+                where: { ...(category && { category }) }
+            })
             for (let i = 0; i < brands.length; i++) {
                 const models = await Item.findAll({ attributes: ['model'], group: ['model'], where: { brand: brands[i].dataValues.brand, ...(category && { category }) } })
                 brands[i].dataValues.models = models
@@ -991,6 +1042,23 @@ class ItemController {
                 }
             }
             return res.json(models)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async updateCategoryShip(req, res, next) {
+        try {
+            const { category, slow_ship, fast_ship } = req.body
+            const items = await Item.findAll({ where: { brand: category } })
+            for (let i of items) {
+                if (slow_ship) i.slow_ship = slow_ship
+                if (fast_ship) i.fast_ship = fast_ship
+                console.log()
+                await i.save()
+            }
+            return res.json(category)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))

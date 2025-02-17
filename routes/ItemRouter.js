@@ -23,6 +23,7 @@ router.get('/brands', itemController.getBrandsAndModels)
 router.put('/watch', itemController.addWatch)
 router.get('/searchword', itemController.compareSearchWord)
 router.post('/allwatches', itemController.createAllWatches)
+router.put('/ship', adminMiddleware, itemController.updateCategoryShip)
 router.delete('/', adminMiddleware, itemController.delete)
 
 module.exports = router

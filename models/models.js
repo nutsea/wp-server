@@ -6,6 +6,7 @@ const Item = sequelize.define('items', {
     id: { type: DataTypes.UUID, defaultValue: uuidv4, primaryKey: true, allowNull: false, unique: true },
     name: { type: DataTypes.STRING, allowNull: false },
     brand: { type: DataTypes.STRING },
+    declension: { type: DataTypes.STRING },
     model: { type: DataTypes.STRING },
     item_uid: { type: DataTypes.STRING, allowNull: false },
     category: { type: DataTypes.STRING },
@@ -16,6 +17,8 @@ const Item = sequelize.define('items', {
     fav: { type: DataTypes.INTEGER, defaultValue: 0 },
     cart: { type: DataTypes.INTEGER, defaultValue: 0 },
     watch: { type: DataTypes.INTEGER, defaultValue: 0 },
+    // fast_ship: { type: DataTypes.FLOAT, allowNull: false },
+    // slow_ship: { type: DataTypes.FLOAT, allowNull: false }
 })
 
 const ModelWatch = sequelize.define('model_watch', {
@@ -176,6 +179,7 @@ const Constants = sequelize.define('constants', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     name: { type: DataTypes.STRING, allowNull: false },
     value: { type: DataTypes.FLOAT, allowNull: false },
+    type: { type: DataTypes.STRING }
 })
 
 User.hasMany(Fav, { foreignKey: 'client_id' })
