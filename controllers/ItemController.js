@@ -140,14 +140,14 @@ class ItemController {
                                 fastShip.value = fast_ship
                                 await fastShip.save()
                             } else {
-                                await Constants.create({ name: category, value: fast_ship, type: 'express' })
+                                await Constants.create({ name: brand, value: fast_ship, type: 'express' })
                             }
                             const slowShip = await Constants.findOne({ where: { name: brand, type: 'standart' } })
                             if (slowShip) {
                                 slowShip.value = slow_ship
                                 await slowShip.save()
                             } else {
-                                await Constants.create({ name: category, value: slow_ship, type: 'standart' })
+                                await Constants.create({ name: brand, value: slow_ship, type: 'standart' })
                             }
                         }
                         for (let j of data.image.spuImage.images) {
@@ -272,14 +272,14 @@ class ItemController {
                                     fastShip.value = fast_ship
                                     await fastShip.save()
                                 } else {
-                                    await Constants.create({ name: category, value: fast_ship, type: 'express' })
+                                    await Constants.create({ name: brand, value: fast_ship, type: 'express' })
                                 }
                                 const slowShip = await Constants.findOne({ where: { name: brand, type: 'standart' } })
                                 if (slowShip) {
                                     slowShip.value = slow_ship
                                     await slowShip.save()
                                 } else {
-                                    await Constants.create({ name: category, value: slow_ship, type: 'standart' })
+                                    await Constants.create({ name: brand, value: slow_ship, type: 'standart' })
                                 }
                             }
                             isItem.min_price = 100000000
