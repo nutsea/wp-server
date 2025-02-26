@@ -61,7 +61,6 @@ class AuthController {
             if (auth && auth.status === 'authentificated') {
                 const user = await User.findOne({ where: { chat_id: auth.chat_id } })
                 const token = generateJwt(user.id, user.chat_id, user.role)
-                // await auth.destroy()
                 return res.json({ token, user })
             } else {
                 console.log('Error: Auth not found')
