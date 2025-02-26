@@ -5,14 +5,9 @@ const { v4: uuidv4 } = require('uuid')
 const path = require('path')
 const fs = require('fs')
 const { Telegraf } = require('telegraf')
+const os = require('os')
 
-//for linux
-// const token = '7117696688:AAGBCpe3nQEziMRibTakCm6UjDkUgG7shVs'
-
-// not for linux
-// const token = '7441093659:AAFtibz3rhCOdpHZpVC8HOe-YNNuvWNrCpE'
-
-const token = process.env.BOT_TOKEN_LINUX
+const token = os.platform() === 'linux' ? (process.env.BOT_TOKEN_LINUX) : (process.env.BOT_TOKEN)
 
 const bot = new Telegraf(token)
 
@@ -59,15 +54,6 @@ const scheduleMessage = (chat_id, message) => {
     } else {
         bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
     }
-    // if (currentHour >= 22 || currentHour < 10) {
-    //     const delay = delayUntilMorning - now
-    //     setTimeout(() => {
-    //         bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
-    //     }, delay)
-    // } else {
-    //     bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
-    // }
-    // bot.telegram.sendMessage(chat_id, message, { parse_mode: 'Markdown', disable_web_page_preview: true })
 }
 
 class OrderController {
@@ -118,8 +104,12 @@ class OrderController {
                 orderNum = 'R' + order.id + '*'
             }
             scheduleMessage(client.chat_id, messages[0] + orderNum + messages.startContinue)
-            const channelMsg = 'Новый заказ *' + orderNum
-            bot.telegram.sendMessage('-1002321184898', channelMsg, { parse_mode: 'Markdown', disable_web_page_preview: true })
+            try {
+                const channelMsg = 'Новый заказ *' + orderNum
+                bot.telegram.sendMessage('-1002321184898', channelMsg, { parse_mode: 'Markdown', disable_web_page_preview: true })
+            } catch (e) {
+                console.log(e)
+            }
             return res.json(order)
         } catch (e) {
             console.log(e)
