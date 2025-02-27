@@ -67,9 +67,14 @@ class OrderController {
             if (client.client !== null) {
                 newName = client.client
             }
+            // if (!client.client) {
+            //     client.client = recipient.split(' ', 2)[1]
+            //     await client.save()
+            // }
             if (newName.length === 0) {
-                newName = recipient.split(' ', 2)[0]
+                newName = recipient.split(' ', 2)[1]
             }
+            console.log(recipient, newName)
             let deliverySum = 0
             for (let i of items) {
                 deliverySum += i.delivery_cost
