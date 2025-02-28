@@ -451,6 +451,15 @@ class ItemController {
                 const category = item.dataValues.category
                 try {
                     await getPoizonItem(i, timeElapsed).then(async data => {
+                        for (let j of data.image.spuImage.images) {
+                            if (!item.img) {
+                                item.img = j.url
+                                await item.save()
+                            }
+                            const hasPhotos = await Photo.findOne({ where: { item_uid: i.toString() } })
+                            if (!hasPhotos)
+                                await Photo.create({ img: j.url, item_uid: i.toString(), item_id: item.id })
+                        }
                         let list = data.sizeDto.sizeInfo.sizeTemplate.list
                         for (let j of list) {
                             if (j.sizeKey === '适合脚长') j.sizeKey = 'SM'
