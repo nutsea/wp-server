@@ -90,7 +90,7 @@ class ItemController {
                         for (let j = 0; j < data.skus.length; j++) {
                             if (data.skus[j] && validProperty(data.skus[j])) {
                                 if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
-                                    const isExist = DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                    const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
                                     if (!isExist) {
                                         await DeletedItems.create({ item_uid: i.toString() })
                                     }
@@ -427,7 +427,7 @@ class ItemController {
                         for (let j = 0; j < data.skus.length; j++) {
                             if (data.skus[j] && validProperty(data.skus[j])) {
                                 if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
-                                    const isExist = DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                    const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
                                     if (!isExist) {
                                         await DeletedItems.create({ item_uid: i.toString() })
                                     }
@@ -1144,7 +1144,7 @@ class ItemController {
             const sizes = await Size.findAll({ where: { item_category: 'clothes' } })
             const nonValidSizes = sizes.filter(size => isNumericString(size.size))
             for (let i of nonValidSizes) {
-                const isExist = DeletedItems.findOne({ where: { item_uid: i.item_uid.toString() } })
+                const isExist = await DeletedItems.findOne({ where: { item_uid: i.item_uid.toString() } })
                 if (!isExist) {
                     await DeletedItems.create({ item_uid: i.item_uid.toString() })
                 }
