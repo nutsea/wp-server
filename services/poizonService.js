@@ -40,4 +40,14 @@ const getByLink = async (link) => {
     }
 }
 
-module.exports = { getPoizonItem, getPoizonIds, getByLink }
+const getSimpleInfo = async (spuids) => {
+    try {
+        const { data } = await $authPoizonHost.post('/productsDetailSimple', { spuids })
+        return data
+    } catch (e) {
+        console.log(e)
+        return e
+    }
+}
+
+module.exports = { getPoizonItem, getPoizonIds, getByLink, getSimpleInfo }
