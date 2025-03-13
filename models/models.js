@@ -21,6 +21,11 @@ const Item = sequelize.define('items', {
     // slow_ship: { type: DataTypes.FLOAT, allowNull: false }
 })
 
+const DeletedItems = sequelize.define('deleted_items', {
+    id: { type: DataTypes.UUID, defaultValue: uuidv4, primaryKey: true, allowNull: false, unique: true },
+    item_uid: { type: DataTypes.STRING, allowNull: false }
+})
+
 const ModelWatch = sequelize.define('model_watch', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     brand: { type: DataTypes.STRING, allowNull: false },
@@ -212,6 +217,7 @@ OrderPhoto.belongsTo(Order, { foreignKey: 'order_id' })
 module.exports = {
     Auth,
     Item,
+    DeletedItems,
     ModelWatch,
     Photo,
     Size,

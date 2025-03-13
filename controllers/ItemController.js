@@ -1,100 +1,11 @@
-const { Item, Photo, Size, Fav, Cart, Constants, ModelWatch } = require('../models/models')
+const { Item, Photo, Size, Fav, Cart, Constants, ModelWatch, DeletedItems } = require('../models/models')
 const ApiError = require('../error/apiError')
 const { Op } = require('sequelize')
-const { getPoizonItem, getPoizonIds, getByLink } = require('../services/poizonService')
+const { getPoizonItem, getPoizonIds, getByLink, getSimpleInfo } = require('../services/poizonService')
 const { Sequelize } = require('../db')
 const sequelize = require('../db')
 const os = require('os');
-
-function filterString(str) {
-    const regex = /[^a-zA-Zа-яА-Я0-9 \x00-\x7F]/g
-    return str.replace(regex, '')
-}
-
-function filterSize(str) {
-    const regex = /[^a-zA-Zа-яА-Я0-9 \u2150-\u215F\x00-\x7F.]/g
-    return str.replace(regex, '')
-}
-
-function translateToSM(str) {
-    if (str === "适合脚长") return "SM"
-}
-
-function convertStringToArray(sizesString) {
-    const sizesArray = sizesString.split(',').map(item => item.trim())
-    return sizesArray
-}
-
-const isUUID = (id) => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    return uuidRegex.test(id)
-}
-
-function formatSkus(skus) {
-    const price = skus.price.prices
-    let price_0, price_2, price_3, delivery_0, delivery_2, delivery_3
-    const tradeType_0 = price.find(item => item.tradeType === 0)
-    if (tradeType_0 && ((tradeType_0 && !tradeType_0.channelAdditionInfoDTO) || (tradeType_0 && !tradeType_0.channelAdditionInfoDTO.symbol))) {
-        price_0 = tradeType_0.price
-        delivery_0 = tradeType_0.timeDelivery.min.toString() + '-' + tradeType_0.timeDelivery.max.toString()
-    }
-    const tradeType_2 = price.find(item => item.tradeType === 2)
-    if (tradeType_2 && ((tradeType_2 && !tradeType_2.channelAdditionInfoDTO) || (tradeType_2 && !tradeType_2.channelAdditionInfoDTO.symbol))) {
-        price_2 = price.find(item => item.tradeType === 2).price
-        delivery_2 = tradeType_2.timeDelivery.min.toString() + '-' + tradeType_2.timeDelivery.max.toString()
-    }
-    const tradeType_3 = price.find(item => item.tradeType === 3)
-    if (tradeType_3 && ((tradeType_3 && !tradeType_3.channelAdditionInfoDTO) || (tradeType_3 && !tradeType_3.channelAdditionInfoDTO.symbol))) {
-        price_3 = price.find(item => item.tradeType === 3).price
-        delivery_3 = tradeType_3.timeDelivery.min.toString() + '-' + tradeType_3.timeDelivery.max.toString()
-    }
-    let clientPrice = null
-    let timeDelivery = null
-    if (price_0) {
-        clientPrice = price_0
-        timeDelivery = tradeType_0.timeDelivery.max
-    } else if (price_2) {
-        clientPrice = price_2
-        timeDelivery = tradeType_2.timeDelivery.max
-    } else if (price_3) {
-        clientPrice = price_3
-        timeDelivery = tradeType_3.timeDelivery.max
-    }
-
-    if (price_0 && (clientPrice - price_0) <= 2000 && tradeType_0.timeDelivery.max <= timeDelivery) {
-        clientPrice = price_0
-        timeDelivery = tradeType_0.timeDelivery.max
-    }
-    if (
-        price_2 &&
-        (clientPrice < price_2 && (price_2 - clientPrice) <= 2000 && tradeType_2.timeDelivery.max <= timeDelivery) ||
-        (clientPrice > price_2 && (clientPrice - price_2) >= 2000)
-    ) {
-        clientPrice = price_2
-        timeDelivery = tradeType_2.timeDelivery.max
-    }
-    if (
-        price_3 &&
-        (clientPrice < price_3 && (price_3 - clientPrice) <= 2000 && tradeType_3.timeDelivery.max <= timeDelivery) ||
-        (clientPrice > price_3 && (clientPrice - price_3) >= 2000)
-    ) {
-        clientPrice = price_3
-    }
-    return { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 }
-}
-
-const validProperty = (data) => {
-    if (data && data.properties && data.properties[0] && data.properties[0].saleProperty && data.properties[0].saleProperty.value) {
-        for (let i of data.properties) {
-            if (i.saleProperty && filterSize(i.saleProperty.value) === i.saleProperty.value) {
-                return i.saleProperty.value
-            }
-        }
-    }
-    return null
-}
-
-const replaceValid = value => value.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+const { filterString, filterSize, convertStringToArray, isUUID, formatSkus, validProperty, replaceValid, sortItemsBySize, getFirstPixelColor, isNumericString } = require('../utils/itemUtilities')
 
 class ItemController {
     async create(req, res, next) {
@@ -123,8 +34,16 @@ class ItemController {
                     try {
                         let isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                         if (!isItem) {
+                            let custom = ''
+                            if (data.detail.structureTitle.includes('【定制球鞋】')) {
+                                if (filterString(data.detail.structureTitle)[0] === ' ') {
+                                    custom = '[Custom]'
+                                } else {
+                                    custom = '[Custom] '
+                                }
+                            }
                             if (filterString(data.detail.structureTitle).length > 0) {
-                                isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, declension, orders: 0 })
+                                isItem = await Item.create({ name: custom + filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, declension, orders: 0 })
                             } else {
                                 isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, declension, orders: 0 })
                             }
@@ -151,13 +70,16 @@ class ItemController {
                             }
                         }
                         for (let j of data.image.spuImage.images) {
-                            if (!isItem.img) {
-                                isItem.img = j.url
-                                await isItem.save()
+                            const pixel = await getFirstPixelColor(j.url)
+                            if (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1) {
+                                if (!isItem.img) {
+                                    isItem.img = j.url
+                                    await isItem.save()
+                                }
+                                const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
+                                if (!isPhoto)
+                                    await Photo.create({ img: j.url, item_uid: i.toString(), item_id: isItem.id })
                             }
-                            const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
-                            if (!isPhoto)
-                                await Photo.create({ img: j.url, item_uid: i.toString(), item_id: isItem.id })
                         }
                         let list = data.sizeDto.sizeInfo.sizeTemplate.list
                         for (let j of list) {
@@ -167,6 +89,15 @@ class ItemController {
                         }
                         for (let j = 0; j < data.skus.length; j++) {
                             if (data.skus[j] && validProperty(data.skus[j])) {
+                                if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
+                                    const isExist = DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                    if (!isExist) {
+                                        await DeletedItems.create({ item_uid: i.toString() })
+                                    }
+                                    const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                                    await itemToDelete.destroy()
+                                    throw new Error(`Failed to create ${i}`)
+                                }
                                 const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                 if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                     isItem.min_price = clientPrice
@@ -177,7 +108,7 @@ class ItemController {
                                     isItem.save()
                                 }
                                 const defaultSize = validProperty(data.skus[j])
-                                const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                const sizeDef = replaceValid(defaultSize)
                                 const sameSizes = await Size.findAll({ where: { size_default: sizeDef, item_uid: i.toString() } })
                                 if (sameSizes && sameSizes.length > 0) {
                                     for (let k of sameSizes) {
@@ -197,9 +128,9 @@ class ItemController {
                                     const defaultTemplate = list[0].sizeValue
                                     const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                     for (let k of list) {
-                                        const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                        const sizeDef = replaceValid(defaultSize)
                                         if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
-                                            const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                            const size = replaceValid(k.sizeValue[defaultIndex])
                                             const isSize = await Size.findOne({ where: { size, size_type: k.sizeKey, size_default: sizeDef, item_uid: i.toString() } })
                                             if (!isSize && clientPrice) {
                                                 await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
@@ -211,7 +142,7 @@ class ItemController {
                                     }
                                 } else {
                                     if (clientPrice) {
-                                        const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                        const sizeDef = replaceValid(defaultSize)
                                         if (list[0].sizeKey !== 'EU') {
                                             await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: "EU", size_default: sizeDef, item_category: category, brand: isItem.brand })
                                         } else {
@@ -221,7 +152,7 @@ class ItemController {
                                         const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                         for (let k of list) {
                                             if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
-                                                const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                                const size = replaceValid(k.sizeValue[defaultIndex])
                                                 await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                             }
                                         }
@@ -247,6 +178,7 @@ class ItemController {
     async createBySpuId(req, res, next) {
         try {
             const { spuIdArr, category, timeElapsed, brand, model, declension, fast_ship, slow_ship } = req.body
+            // let ids = JSON.parse(spuIdArr)
             let items = []
             let error = false
             for (let i of spuIdArr) {
@@ -255,8 +187,16 @@ class ItemController {
                         try {
                             let isItem = await Item.findOne({ where: { item_uid: i.toString() } })
                             if (!isItem) {
+                                let custom = ''
+                                if (data.detail.structureTitle.includes('【定制球鞋】')) {
+                                    if (filterString(data.detail.structureTitle)[0] === ' ') {
+                                        custom = '[Custom]'
+                                    } else {
+                                        custom = '[Custom] '
+                                    }
+                                }
                                 if (filterString(data.detail.structureTitle).length > 0) {
-                                    isItem = await Item.create({ name: filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, declension, orders: 0 })
+                                    isItem = await Item.create({ name: custom + filterString(data.detail.structureTitle), item_uid: i.toString(), category, brand, model, declension, orders: 0 })
                                 } else {
                                     isItem = await Item.create({ name: brand + ' ' + model, item_uid: i.toString(), category, brand, model, declension, orders: 0 })
                                 }
@@ -285,13 +225,16 @@ class ItemController {
                             isItem.min_price = 100000000
                             isItem.max_price = 0
                             for (let j of data.image.spuImage.images) {
-                                if (!isItem.img) {
-                                    isItem.img = j.url
-                                    await isItem.save()
+                                const pixel = await getFirstPixelColor(j.url)
+                                if (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1) {
+                                    if (!isItem.img) {
+                                        isItem.img = j.url
+                                        await isItem.save()
+                                    }
+                                    const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
+                                    if (!isPhoto)
+                                        await Photo.create({ img: j.url, item_uid: i.toString(), item_id: isItem.id })
                                 }
-                                const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
-                                if (!isPhoto)
-                                    await Photo.create({ img: j.url, item_uid: i.toString(), item_id: isItem.id })
                             }
                             let list = data.sizeDto.sizeInfo.sizeTemplate.list
                             for (let j of list) {
@@ -301,6 +244,16 @@ class ItemController {
                             }
                             for (let j = 0; j < data.skus.length; j++) {
                                 if (data.skus[j] && validProperty(data.skus[j])) {
+                                    // if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
+                                    //     const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                    //     if (!isExist) {
+                                    //         const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                                    //         console.log(deleted)
+                                    //     }
+                                    //     const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                                    //     await itemToDelete.destroy()
+                                    //     throw new Error(`Failed to create ${i}`)
+                                    // }
                                     const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                     if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                         isItem.min_price = clientPrice
@@ -311,7 +264,7 @@ class ItemController {
                                         isItem.save()
                                     }
                                     const defaultSize = validProperty(data.skus[j])
-                                    const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                    const sizeDef = replaceValid(defaultSize)
                                     const sameSizes = await Size.findAll({ where: { size_default: sizeDef, item_uid: i.toString() } })
                                     if (sameSizes && sameSizes.length > 0) {
                                         for (let k of sameSizes) {
@@ -332,7 +285,7 @@ class ItemController {
                                         const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                         for (let k of list) {
                                             if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
-                                                const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                                const size = replaceValid(k.sizeValue[defaultIndex])
                                                 const isSize = await Size.findOne({ where: { size, size_type: k.sizeKey, size_default: sizeDef, item_uid: i.toString() } })
                                                 if (!isSize && clientPrice) {
                                                     await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
@@ -344,7 +297,7 @@ class ItemController {
                                         }
                                     } else {
                                         if (clientPrice) {
-                                            const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                            const sizeDef = replaceValid(defaultSize)
                                             if (list[0].sizeKey !== 'EU') {
                                                 await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
                                             } else {
@@ -354,7 +307,7 @@ class ItemController {
                                             const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                             for (let k of list) {
                                                 if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
-                                                    const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                                    const size = replaceValid(k.sizeValue[defaultIndex])
                                                     await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                                 }
                                             }
@@ -426,6 +379,8 @@ class ItemController {
             for (let i of ids.productList) {
                 const isExist = await Item.findOne({ where: { item_uid: i.spuId.toString() } })
                 if (isExist) i.isExist = true
+                const isTried = await DeletedItems.findOne({ where: { item_uid: i.spuId.toString() } })
+                if (isTried) i.isTried = true
             }
             return res.json(ids)
         } catch (e) {
@@ -452,13 +407,16 @@ class ItemController {
                 try {
                     await getPoizonItem(i, timeElapsed).then(async data => {
                         for (let j of data.image.spuImage.images) {
-                            if (!item.img) {
-                                item.img = j.url
-                                await item.save()
+                            const pixel = await getFirstPixelColor(j.url)
+                            if (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1) {
+                                if (!item.img) {
+                                    item.img = j.url
+                                    await item.save()
+                                }
+                                const hasPhotos = await Photo.findOne({ where: { item_uid: i.toString() } })
+                                if (!hasPhotos)
+                                    await Photo.create({ img: j.url, item_uid: i.toString(), item_id: item.id })
                             }
-                            const hasPhotos = await Photo.findOne({ where: { item_uid: i.toString() } })
-                            if (!hasPhotos)
-                                await Photo.create({ img: j.url, item_uid: i.toString(), item_id: item.id })
                         }
                         let list = data.sizeDto.sizeInfo.sizeTemplate.list
                         for (let j of list) {
@@ -468,6 +426,15 @@ class ItemController {
                         }
                         for (let j = 0; j < data.skus.length; j++) {
                             if (data.skus[j] && validProperty(data.skus[j])) {
+                                if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
+                                    const isExist = DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                    if (!isExist) {
+                                        await DeletedItems.create({ item_uid: i.toString() })
+                                    }
+                                    const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                                    await itemToDelete.destroy()
+                                    throw new Error(`Failed to create ${i}`)
+                                }
                                 const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                 if ((!item.min_price || item.min_price === null || item.min_price > clientPrice) && clientPrice) {
                                     item.min_price = clientPrice
@@ -478,7 +445,8 @@ class ItemController {
                                     item.save()
                                 }
                                 const defaultSize = validProperty(data.skus[j])
-                                const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                const sizeDef = replaceValid(defaultSize)
+                                console.log(sizeDef)
                                 const sameSizes = await Size.findAll({ where: { size_default: sizeDef, item_uid: i.toString() } })
                                 if (sameSizes && sameSizes.length > 0) {
                                     for (let k of sameSizes) {
@@ -499,7 +467,7 @@ class ItemController {
                                     const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                     for (let k of list) {
                                         if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
-                                            const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                            const size = replaceValid(k.sizeValue[defaultIndex])
                                             const isSize = await Size.findOne({ where: { size, size_type: k.sizeKey, size_default: sizeDef, item_uid: i.toString() } })
                                             if (!isSize && clientPrice) {
                                                 await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
@@ -516,7 +484,7 @@ class ItemController {
                                     }
                                 } else {
                                     if (clientPrice) {
-                                        const sizeDef = defaultSize.replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                        const sizeDef = replaceValid(defaultSize)
                                         if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
                                             await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
                                         } else {
@@ -526,7 +494,7 @@ class ItemController {
                                         const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                         for (let k of list) {
                                             if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
-                                                const size = k.sizeValue[defaultIndex].replace('½', ' 1/2').replace('⅔', ' 2/3').replace('⅓', ' 1/3').replace('¼', ' 1/4').replace('¾', ' 3/4')
+                                                const size = replaceValid(k.sizeValue[defaultIndex])
                                                 await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
                                             }
                                         }
@@ -592,6 +560,11 @@ class ItemController {
             item.dataValues.img = images
             let sizes = await Size.findAll({ where: { item_uid: item.dataValues.item_uid } })
             item.dataValues.sizes = sizes
+
+            const sizesToSort = sizes.filter(size => size.size_type === 'EU')
+            const sortedSizes = sortItemsBySize(sizesToSort)
+            item.dataValues.min_size = sortedSizes[0].size
+            item.dataValues.max_size = sortedSizes[sortedSizes.length - 1].size
             return res.json(item)
         } catch (e) {
             console.log(e)
@@ -844,6 +817,11 @@ class ItemController {
             for (let i of items) {
                 let minimal = 100000000
                 i.dataValues.price = minimal
+
+                const sizes = await Size.findAll({ where: { item_uid: i.item_uid, size_type: 'EU' } })
+                const sortedSizes = sortItemsBySize(sizes)
+                i.dataValues.min_size = sortedSizes[0]?.size
+                i.dataValues.max_size = sortedSizes[sortedSizes.length - 1]?.size
             }
 
             switch (sort) {
@@ -932,17 +910,6 @@ class ItemController {
     async getBrandsAndModels(req, res, next) {
         try {
             const { category } = req.query
-            // let brands = await Item.findAll({ attributes: ['brand'], group: ['brand'], where: { ...(category && { category }) } })
-            // let brands = await Item.findAll({
-            //     attributes: [
-            //         [sequelize.fn('MIN', sequelize.col('item_uid')), 'item_uid'],
-            //         [sequelize.fn('MIN', sequelize.col('fast_ship')), 'fast_ship'],
-            //         [sequelize.fn('MIN', sequelize.col('slow_ship')), 'slow_ship'],
-            //         'brand'
-            //     ],
-            //     group: ['brand'],
-            //     where: { ...(category && { category }) }
-            // })
             let brands = await Item.findAll({
                 attributes: [
                     [sequelize.fn('MIN', sequelize.col('item_uid')), 'item_uid'],
@@ -1068,6 +1035,97 @@ class ItemController {
                 await i.save()
             }
             return res.json(category)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async convertClothesSizes(req, res, next) {
+        try {
+            const sizePatterns = [
+                '4XS', '3XS', '2XS', '2XL', '3XL', '4XL'
+            ]
+            const sizeRegex = /^\d+\/(XXXXS|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL)$/
+            const sizes = await Size.findAll({
+                where: {
+                    [Op.or]: [
+                        { size: { [Op.in]: sizePatterns } },
+                        { size: { [Op.regexp]: sizeRegex.source } },
+                        { size_default: { [Op.in]: sizePatterns } },
+                        { size_default: { [Op.regexp]: sizeRegex.source } }
+                    ]
+                }
+            })
+            for (let i of sizes) {
+                i.size = replaceValid(i.size)
+                i.size_default = replaceValid(i.size_default)
+                await i.save()
+            }
+            return res.json(sizes)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async addCustomMark(req, res, next) {
+        try {
+            const items = await Item.findAll()
+            const ids = items.map(i => Number(i.item_uid))
+            for (let i = 0; i < ids.length; i += 10) {
+                const { data } = await getSimpleInfo(ids.slice(i, i + 10))
+                for (let j of data) {
+                    let custom = ''
+                    const item = items.find(item => item.item_uid == j.spuId)
+                    if (j.title.includes('【定制球鞋】') && !item.name.includes('[Custom]')) {
+                        custom = '[Custom] '
+                        item.name = custom + item.name
+                        await item.save()
+                    }
+                }
+            }
+            return res.json(ids)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async clearModelsPhotos(req, res, next) {
+        try {
+            const shoes = await Item.findAll({ where: { category: 'shoes' } })
+            const shoesIds = shoes.map(i => i.item_uid)
+            const photos = await Photo.findAll({ where: { item_uid: { [Op.in]: shoesIds } } })
+            for (let i of photos) {
+                const pixel = await getFirstPixelColor(i.img)
+                if ((pixel.r < 250 || pixel.g < 250 || pixel.b < 250) && pixel.a === 1) {
+                    i.dataValues.color = pixel
+                    await i.destroy()
+                }
+            }
+            return res.json(photos)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async deleteNonValidItems(req, res, next) {
+        try {
+            const sizes = await Size.findAll({ where: { item_category: 'clothes' } })
+            const nonValidSizes = sizes.filter(size => isNumericString(size.size))
+            for (let i of nonValidSizes) {
+                const isExist = DeletedItems.findOne({ where: { item_uid: i.item_uid.toString() } })
+                if (!isExist) {
+                    await DeletedItems.create({ item_uid: i.item_uid.toString() })
+                }
+                const itemToDelete = await Item.findOne({ where: { item_uid: i.item_uid.toString() } })
+                if (itemToDelete) {
+                    await itemToDelete.destroy()
+                }
+            }
+            return res.json(nonValidSizes)
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
