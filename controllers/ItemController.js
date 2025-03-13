@@ -244,16 +244,16 @@ class ItemController {
                             }
                             for (let j = 0; j < data.skus.length; j++) {
                                 if (data.skus[j] && validProperty(data.skus[j])) {
-                                    // if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
-                                    //     const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
-                                    //     if (!isExist) {
-                                    //         const deleted = await DeletedItems.create({ item_uid: i.toString() })
-                                    //         console.log(deleted)
-                                    //     }
-                                    //     const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
-                                    //     await itemToDelete.destroy()
-                                    //     throw new Error(`Failed to create ${i}`)
-                                    // }
+                                    if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
+                                        const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                        if (!isExist) {
+                                            const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                                            console.log(deleted)
+                                        }
+                                        const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                                        await itemToDelete.destroy()
+                                        throw new Error(`Failed to create ${i}`)
+                                    }
                                     const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                     if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                         isItem.min_price = clientPrice
