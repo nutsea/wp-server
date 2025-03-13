@@ -816,6 +816,16 @@ class ItemController {
                 limit: limitClient
             })
 
+            for (let i of items.rows) {
+                let minimal = 100000000
+                i.dataValues.price = minimal
+
+                const sizes = await Size.findAll({ where: { item_uid: i.item_uid, size_type: 'EU' } })
+                const sortedSizes = sortItemsBySize(sizes)
+                i.dataValues.min_size = sortedSizes[0]?.size
+                i.dataValues.max_size = sortedSizes[sortedSizes.length - 1]?.size
+            }
+
             // let items = await Item.findAll({
             //     where: {
             //         ...(category && { category }),
