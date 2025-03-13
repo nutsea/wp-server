@@ -798,7 +798,7 @@ class ItemController {
                     .join(' & ')
             }
 
-            let items = await Item.findAll({
+            let items = await Item.findAndCountAll({
                 where: {
                     ...(category && { category }),
                     ...(brands && conditions),
@@ -812,37 +812,55 @@ class ItemController {
                     }),
                 },
                 order: [['createdAt', 'DESC']],
+                offset,
+                limit: limitClient
             })
 
-            for (let i of items) {
-                let minimal = 100000000
-                i.dataValues.price = minimal
+            // let items = await Item.findAll({
+            //     where: {
+            //         ...(category && { category }),
+            //         ...(brands && conditions),
+            //         ...(search && {
+            //             [Op.or]: Sequelize.literal(`
+            //                 to_tsvector('simple', "name") @@ to_tsquery('simple', '${formattedSearch}') OR 
+            //                 to_tsvector('simple', "brand") @@ to_tsquery('simple', '${formattedSearch}') OR 
+            //                 to_tsvector('simple', "model") @@ to_tsquery('simple', '${formattedSearch}') OR 
+            //                 to_tsvector('simple', "item_uid") @@ to_tsquery('simple', '${formattedSearch}')
+            //             `)
+            //         }),
+            //     },
+            //     order: [['createdAt', 'DESC']],
+            // })
 
-                const sizes = await Size.findAll({ where: { item_uid: i.item_uid, size_type: 'EU' } })
-                const sortedSizes = sortItemsBySize(sizes)
-                i.dataValues.min_size = sortedSizes[0]?.size
-                i.dataValues.max_size = sortedSizes[sortedSizes.length - 1]?.size
-            }
+            // for (let i of items) {
+            //     let minimal = 100000000
+            //     i.dataValues.price = minimal
 
-            switch (sort) {
-                case 'priceUp':
-                    items.sort((a, b) => a.dataValues.price - b.dataValues.price);
-                    break
+            //     const sizes = await Size.findAll({ where: { item_uid: i.item_uid, size_type: 'EU' } })
+            //     const sortedSizes = sortItemsBySize(sizes)
+            //     i.dataValues.min_size = sortedSizes[0]?.size
+            //     i.dataValues.max_size = sortedSizes[sortedSizes.length - 1]?.size
+            // }
 
-                case 'priceDown':
-                    items.sort((a, b) => b.dataValues.price - a.dataValues.price);
-                    break
+            // switch (sort) {
+            //     case 'priceUp':
+            //         items.sort((a, b) => a.dataValues.price - b.dataValues.price);
+            //         break
 
-                default:
-                    break
-            }
+            //     case 'priceDown':
+            //         items.sort((a, b) => b.dataValues.price - a.dataValues.price);
+            //         break
 
-            const paginatedItems = items.slice(offset, offset + limitClient)
+            //     default:
+            //         break
+            // }
 
-            items = {
-                count: items.length,
-                rows: paginatedItems
-            }
+            // const paginatedItems = items.slice(offset, offset + limitClient)
+
+            // items = {
+            //     count: items.length,
+            //     rows: paginatedItems
+            // }
 
             return res.json(items)
         } catch (e) {
