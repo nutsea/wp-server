@@ -1076,21 +1076,36 @@ class ItemController {
                 '4XS', '3XS', '2XS', '2XL', '3XL', '4XL'
             ]
             const sizeRegex = /^\d+\/(XXXXS|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL)$/
-            // const sizes = await Size.findAll({
-            //     where: {
-            //         [Op.or]: [
-            //             { size: { [Op.in]: sizePatterns } },
-            //             { size: { [Op.regexp]: sizeRegex.source } },
-            //             { size_default: { [Op.in]: sizePatterns } },
-            //             { size_default: { [Op.regexp]: sizeRegex.source } }
-            //         ]
-            //     }
-            // })
-            const sizes = await Size.findAll({ where: { item_category: 'clothes' } })
+            const sizes = await Size.findAll({
+                where: {
+                    [Op.or]: [
+                        { size: { [Op.in]: sizePatterns } },
+                        { size: { [Op.regexp]: sizeRegex.source } },
+                        { size_default: { [Op.in]: sizePatterns } },
+                        { size_default: { [Op.regexp]: sizeRegex.source } }
+                    ]
+                }
+            })
             for (let i of sizes) {
                 i.size = replaceValid(i.size)
                 i.size_default = replaceValid(i.size_default)
                 await i.save()
+            }
+            return res.json(sizes)
+        } catch (e) {
+            console.log(e)
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async deleteClothesDigitalSizes(req, res, next) {
+        try {
+            const sizes = await Size.findAll({ where: { item_category: 'clothes' } })
+            for (let i of sizes) {
+                if (isNumericString(i.size)) {
+                    const allSizesUid = await Size.findAll({ where: { item_uid: i.item_uid } })
+                    allSizesUid.forEach(async j => await j.destroy())
+                }
             }
             return res.json(sizes)
         } catch (e) {
