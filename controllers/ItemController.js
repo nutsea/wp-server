@@ -1113,7 +1113,7 @@ class ItemController {
                     }
                 }
             }
-            return res.json(ids)
+            return res.json({ ids })
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
@@ -1132,7 +1132,7 @@ class ItemController {
                     await i.destroy()
                 }
             }
-            return res.json(photos)
+            return res.json({ photos })
         } catch (e) {
             console.log(e)
             return next(ApiError.badRequest(e.message))
