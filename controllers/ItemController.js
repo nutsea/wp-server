@@ -244,16 +244,17 @@ class ItemController {
                             }
                             for (let j = 0; j < data.skus.length; j++) {
                                 if (data.skus[j] && validProperty(data.skus[j])) {
-                                    if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
-                                        const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
-                                        if (!isExist) {
-                                            const deleted = await DeletedItems.create({ item_uid: i.toString() })
-                                            console.log(deleted)
-                                        }
-                                        const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
-                                        await itemToDelete.destroy()
-                                        throw new Error(`Failed to create ${i}`)
-                                    }
+                                    console.log(123)
+                                    // if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
+                                    //     const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                    //     if (!isExist) {
+                                    //         const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                                    //         console.log(deleted)
+                                    //     }
+                                    //     const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                                    //     await itemToDelete.destroy()
+                                    //     throw new Error(`Failed to create ${i}`)
+                                    // }
                                     const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                     if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                         isItem.min_price = clientPrice
@@ -1075,16 +1076,17 @@ class ItemController {
                 '4XS', '3XS', '2XS', '2XL', '3XL', '4XL'
             ]
             const sizeRegex = /^\d+\/(XXXXS|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL)$/
-            const sizes = await Size.findAll({
-                where: {
-                    [Op.or]: [
-                        { size: { [Op.in]: sizePatterns } },
-                        { size: { [Op.regexp]: sizeRegex.source } },
-                        { size_default: { [Op.in]: sizePatterns } },
-                        { size_default: { [Op.regexp]: sizeRegex.source } }
-                    ]
-                }
-            })
+            // const sizes = await Size.findAll({
+            //     where: {
+            //         [Op.or]: [
+            //             { size: { [Op.in]: sizePatterns } },
+            //             { size: { [Op.regexp]: sizeRegex.source } },
+            //             { size_default: { [Op.in]: sizePatterns } },
+            //             { size_default: { [Op.regexp]: sizeRegex.source } }
+            //         ]
+            //     }
+            // })
+            const sizes = await Size.findAll({ where: { item_category: 'clothes' } })
             for (let i of sizes) {
                 i.size = replaceValid(i.size)
                 i.size_default = replaceValid(i.size_default)
