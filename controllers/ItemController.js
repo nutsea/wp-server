@@ -5,7 +5,7 @@ const { getPoizonItem, getPoizonIds, getByLink, getSimpleInfo } = require('../se
 const { Sequelize } = require('../db')
 const sequelize = require('../db')
 const os = require('os');
-const { filterString, filterSize, convertStringToArray, isUUID, formatSkus, validProperty, replaceValid, sortItemsBySize, getFirstPixelColor, isNumericString } = require('../utils/itemUtilities')
+const { filterString, filterSize, convertStringToArray, isUUID, formatSkus, validProperty, replaceValid, sortItemsBySize, getFirstPixelColor, isNumericString, allNumericSizes } = require('../utils/itemUtilities')
 
 class ItemController {
     async create(req, res, next) {
@@ -87,17 +87,18 @@ class ItemController {
                             j.sizeKey = filterString(j.sizeKey)
                             j.sizeValue = convertStringToArray(j.sizeValue)
                         }
+                        if (allNumericSizes(data.skus)) {
+                            const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                            if (!isExist) {
+                                const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                                console.log(deleted)
+                            }
+                            const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                            await itemToDelete.destroy()
+                            throw new Error(`Failed to create ${i}`)
+                        }
                         for (let j = 0; j < data.skus.length; j++) {
-                            if (data.skus[j] && validProperty(data.skus[j])) {
-                                if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
-                                    const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
-                                    if (!isExist) {
-                                        await DeletedItems.create({ item_uid: i.toString() })
-                                    }
-                                    const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
-                                    await itemToDelete.destroy()
-                                    throw new Error(`Failed to create ${i}`)
-                                }
+                            if (data.skus[j] && validProperty(data.skus[j]) && !isNumericString(replaceValid(validProperty(data.skus[j])))) {
                                 const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                 if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                     isItem.min_price = clientPrice
@@ -178,7 +179,6 @@ class ItemController {
     async createBySpuId(req, res, next) {
         try {
             const { spuIdArr, category, timeElapsed, brand, model, declension, fast_ship, slow_ship } = req.body
-            // let ids = JSON.parse(spuIdArr)
             let items = []
             let error = false
             for (let i of spuIdArr) {
@@ -245,18 +245,18 @@ class ItemController {
                                 j.sizeKey = filterString(j.sizeKey)
                                 j.sizeValue = convertStringToArray(j.sizeValue)
                             }
+                            if (allNumericSizes(data.skus)) {
+                                const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                if (!isExist) {
+                                    const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                                    console.log(deleted)
+                                }
+                                const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                                await itemToDelete.destroy()
+                                throw new Error(`Failed to create ${i}`)
+                            }
                             for (let j = 0; j < data.skus.length; j++) {
-                                if (data.skus[j] && validProperty(data.skus[j])) {
-                                    if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
-                                        const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
-                                        if (!isExist) {
-                                            const deleted = await DeletedItems.create({ item_uid: i.toString() })
-                                            console.log(deleted)
-                                        }
-                                        const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
-                                        await itemToDelete.destroy()
-                                        throw new Error(`Failed to create ${i}`)
-                                    }
+                                if (data.skus[j] && validProperty(data.skus[j]) && !isNumericString(replaceValid(validProperty(data.skus[j])))) {
                                     const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                     if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                         isItem.min_price = clientPrice
@@ -427,17 +427,24 @@ class ItemController {
                             j.sizeKey = filterString(j.sizeKey)
                             j.sizeValue = convertStringToArray(j.sizeValue)
                         }
+                        if (allNumericSizes(data.skus)) {
+                            const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                            if (!isExist) {
+                                const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                                console.log(deleted)
+                            }
+                            const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                            await itemToDelete.destroy()
+                            throw new Error(`Failed to create ${i}`)
+                        }
                         for (let j = 0; j < data.skus.length; j++) {
-                            if (data.skus[j] && validProperty(data.skus[j])) {
-                                if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
-                                    const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
-                                    if (!isExist) {
-                                        await DeletedItems.create({ item_uid: i.toString() })
-                                    }
-                                    const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
-                                    await itemToDelete.destroy()
-                                    throw new Error(`Failed to create ${i}`)
+                            if (data.skus[j] && validProperty(data.skus[j]) && isNumericString(replaceValid(validProperty(data.skus[j])))) {
+                                const sizesToDelete = await Size.findAll({ where: { size: replaceValid(validProperty(data.skus[j])) } })
+                                for (let i of sizesToDelete) {
+                                    await i.destroy()
                                 }
+                            }
+                            if (data.skus[j] && validProperty(data.skus[j]) && !isNumericString(replaceValid(validProperty(data.skus[j])))) {
                                 const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                 if ((!item.min_price || item.min_price === null || item.min_price > clientPrice) && clientPrice) {
                                     item.min_price = clientPrice
@@ -827,52 +834,6 @@ class ItemController {
                 i.dataValues.min_size = sortedSizes[0]?.size
                 i.dataValues.max_size = sortedSizes[sortedSizes.length - 1]?.size
             }
-
-            // let items = await Item.findAll({
-            //     where: {
-            //         ...(category && { category }),
-            //         ...(brands && conditions),
-            //         ...(search && {
-            //             [Op.or]: Sequelize.literal(`
-            //                 to_tsvector('simple', "name") @@ to_tsquery('simple', '${formattedSearch}') OR 
-            //                 to_tsvector('simple', "brand") @@ to_tsquery('simple', '${formattedSearch}') OR 
-            //                 to_tsvector('simple', "model") @@ to_tsquery('simple', '${formattedSearch}') OR 
-            //                 to_tsvector('simple', "item_uid") @@ to_tsquery('simple', '${formattedSearch}')
-            //             `)
-            //         }),
-            //     },
-            //     order: [['createdAt', 'DESC']],
-            // })
-
-            // for (let i of items) {
-            //     let minimal = 100000000
-            //     i.dataValues.price = minimal
-
-            //     const sizes = await Size.findAll({ where: { item_uid: i.item_uid, size_type: 'EU' } })
-            //     const sortedSizes = sortItemsBySize(sizes)
-            //     i.dataValues.min_size = sortedSizes[0]?.size
-            //     i.dataValues.max_size = sortedSizes[sortedSizes.length - 1]?.size
-            // }
-
-            // switch (sort) {
-            //     case 'priceUp':
-            //         items.sort((a, b) => a.dataValues.price - b.dataValues.price);
-            //         break
-
-            //     case 'priceDown':
-            //         items.sort((a, b) => b.dataValues.price - a.dataValues.price);
-            //         break
-
-            //     default:
-            //         break
-            // }
-
-            // const paginatedItems = items.slice(offset, offset + limitClient)
-
-            // items = {
-            //     count: items.length,
-            //     rows: paginatedItems
-            // }
 
             return res.json(items)
         } catch (e) {
