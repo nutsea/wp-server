@@ -95,12 +95,16 @@ const replaceValid = value => value
     .replace('⅓', ' 1/3')
     .replace('¼', ' 1/4')
     .replace('¾', ' 3/4')
+    .replace('6XS', 'XXXXXXS')
+    .replace('5XS', 'XXXXXS')
     .replace('4XS', 'XXXXS')
     .replace('3XS', 'XXXS')
     .replace('2XS', 'XXS')
     .replace('2XL', 'XXL')
     .replace('3XL', 'XXXL')
     .replace('4XL', 'XXXXL')
+    .replace('5XL', 'XXXXXL')
+    .replace('6XL', 'XXXXXXL')
     .replace(/\d+\/(XXXXS|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL)/g, (_, size) => size)
 
 const convertSizeToNumeric = (size) => {
