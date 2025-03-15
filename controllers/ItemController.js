@@ -409,6 +409,8 @@ class ItemController {
                 const category = item.dataValues.category
                 try {
                     await getPoizonItem(i, timeElapsed).then(async data => {
+                        item.img = data.image.spuImage.images[0]
+                        await item.save()
                         for (let j of data.image.spuImage.images) {
                             const pixel = await getFirstPixelColor(j.url)
                             if (category !== 'shoes' || (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1)) {
@@ -416,7 +418,6 @@ class ItemController {
                                     item.img = j.url
                                     await item.save()
                                 }
-                                // const hasPhotos = await Photo.findOne({ where: { item_uid: i.toString() } })
                                 const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
                                 if (!isPhoto)
                                     await Photo.create({ img: j.url, item_uid: i.toString(), item_id: item.id })
