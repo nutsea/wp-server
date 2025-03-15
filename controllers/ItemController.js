@@ -416,8 +416,9 @@ class ItemController {
                                     item.img = j.url
                                     await item.save()
                                 }
-                                const hasPhotos = await Photo.findOne({ where: { item_uid: i.toString() } })
-                                if (!hasPhotos)
+                                // const hasPhotos = await Photo.findOne({ where: { item_uid: i.toString() } })
+                                const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
+                                if (!isPhoto)
                                     await Photo.create({ img: j.url, item_uid: i.toString(), item_id: item.id })
                             }
                         }
