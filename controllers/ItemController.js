@@ -416,18 +416,18 @@ class ItemController {
                             if (oldPhoto)
                                 await oldPhoto.destroy()
                         }
-                        for (let j of data.image.spuImage.images) {
-                            const pixel = await getFirstPixelColor(j.url)
-                            if (category !== 'shoes' || (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1)) {
-                                if (!item.img) {
-                                    item.img = j.url
-                                    await item.save()
-                                }
-                                const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
-                                if (!isPhoto)
-                                    await Photo.create({ img: j.url, item_uid: i.toString(), item_id: item.id })
-                            }
-                        }
+                        // for (let j of data.image.spuImage.images) {
+                        //     const pixel = await getFirstPixelColor(j.url)
+                        //     if (category !== 'shoes' || (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1)) {
+                        //         if (!item.img) {
+                        //             item.img = j.url
+                        //             await item.save()
+                        //         }
+                        //         const isPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
+                        //         if (!isPhoto)
+                        //             await Photo.create({ img: j.url, item_uid: i.toString(), item_id: item.id })
+                        //     }
+                        // }
                         let list = data.sizeDto.sizeInfo.sizeTemplate.list
                         for (let j of list) {
                             if (j.sizeKey === '适合脚长') j.sizeKey = 'SM'
