@@ -91,7 +91,6 @@ class ItemController {
                             const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
                             if (!isExist) {
                                 const deleted = await DeletedItems.create({ item_uid: i.toString() })
-                                console.log(deleted)
                             }
                             const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
                             await itemToDelete.destroy()
@@ -142,9 +141,9 @@ class ItemController {
                                         }
                                     }
                                 } else {
-                                    if (clientPrice) {
+                                    if (clientPrice && list[0]) {
                                         const sizeDef = replaceValid(defaultSize)
-                                        if (list[0].sizeKey !== 'EU') {
+                                        if (list[0] && list[0].sizeKey !== 'EU') {
                                             await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: "EU", size_default: sizeDef, item_category: category, brand: isItem.brand })
                                         } else {
                                             await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
@@ -163,6 +162,27 @@ class ItemController {
                         }
                     } catch (e) {
                         console.log(e)
+                    }
+                    const hasAnySizes = await Size.findOne({ where: { item_uid: i.toString() } })
+                    if (!hasAnySizes) {
+                        const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                        if (!isExist) {
+                            const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                        }
+                        const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                        await itemToDelete.destroy()
+                        throw new Error(`Failed to create ${i}`)
+                    }
+                }).catch(async () => {
+                    const hasAnySizes = await Size.findOne({ where: { item_uid: i.toString() } })
+                    if (!hasAnySizes) {
+                        const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                        if (!isExist) {
+                            const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                        }
+                        const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                        await itemToDelete.destroy()
+                        throw new Error(`Failed to create ${i}`)
                     }
                 })
             } catch (e) {
@@ -207,7 +227,6 @@ class ItemController {
                                 }
                             }
                             if (category !== 'shoes') {
-                                console.log(brand, 111)
                                 const fastShip = await Constants.findOne({ where: { name: brand, type: 'express' } })
                                 if (fastShip) {
                                     if (fast_ship)
@@ -249,7 +268,6 @@ class ItemController {
                                 const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
                                 if (!isExist) {
                                     const deleted = await DeletedItems.create({ item_uid: i.toString() })
-                                    console.log(deleted)
                                 }
                                 const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
                                 await itemToDelete.destroy()
@@ -299,12 +317,12 @@ class ItemController {
                                             }
                                         }
                                     } else {
-                                        if (clientPrice) {
+                                        if (clientPrice && list[0]) {
                                             const sizeDef = replaceValid(defaultSize)
-                                            if (list[0].sizeKey !== 'EU') {
+                                            if (list[0] && list[0].sizeKey !== 'EU') {
                                                 await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
                                             } else {
-                                                await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                list[0] && await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                             }
                                             const defaultTemplate = list[0].sizeValue
                                             const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
@@ -320,6 +338,28 @@ class ItemController {
                             }
                         } catch (e) {
                             console.log(e)
+                        }
+                        const hasAnySizes = await Size.findOne({ where: { item_uid: i.toString() } })
+                        if (!hasAnySizes) {
+                            const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                            if (!isExist) {
+                                const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                            }
+                            const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                            await itemToDelete.destroy()
+                            throw new Error(`Failed to create ${i}`)
+                        }
+                    }).catch(async () => {
+                        const hasAnySizes = await Size.findOne({ where: { item_uid: i.toString() } })
+                        console.log(hasAnySizes)
+                        if (!hasAnySizes) {
+                            const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                            if (!isExist) {
+                                const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                            }
+                            const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                            await itemToDelete.destroy()
+                            throw new Error(`Failed to create ${i}`)
                         }
                     })
                 } catch (e) {
@@ -413,7 +453,6 @@ class ItemController {
                         await item.save()
                         for (let j of data.image.spuImage.images) {
                             const oldPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
-                            console.log(oldPhoto, j.url)
                             if (oldPhoto)
                                 await oldPhoto.destroy()
                         }
@@ -439,7 +478,6 @@ class ItemController {
                             const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
                             if (!isExist) {
                                 const deleted = await DeletedItems.create({ item_uid: i.toString() })
-                                console.log(deleted)
                             }
                             const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
                             await itemToDelete.destroy()
@@ -500,9 +538,9 @@ class ItemController {
                                         }
                                     }
                                 } else {
-                                    if (clientPrice) {
+                                    if (clientPrice && list[0]) {
                                         const sizeDef = replaceValid(defaultSize)
-                                        if (list[0].sizeKey !== 'EU') {
+                                        if (list && list[0].sizeKey !== 'EU') {
                                             await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
                                         } else {
                                             await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
@@ -522,6 +560,27 @@ class ItemController {
                         for (let i of sizes) {
                             const wasParsed = !data.skus.some(sku => replaceValid(validProperty(sku)) == i.size_default)
                             if (wasParsed) await i.destroy()
+                        }
+                        const hasAnySizes = await Size.findOne({ where: { item_uid: i.toString() } })
+                        if (!hasAnySizes) {
+                            const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                            if (!isExist) {
+                                const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                            }
+                            const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                            await itemToDelete.destroy()
+                            throw new Error(`Failed to create ${i}`)
+                        }
+                    }).catch(async () => {
+                        const hasAnySizes = await Size.findOne({ where: { item_uid: i.toString() } })
+                        if (!hasAnySizes) {
+                            const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                            if (!isExist) {
+                                const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                            }
+                            const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                            await itemToDelete.destroy()
+                            throw new Error(`Failed to create ${i}`)
                         }
                     })
                 } catch (e) {
@@ -1030,7 +1089,6 @@ class ItemController {
             for (let i of items) {
                 if (slow_ship) i.slow_ship = slow_ship
                 if (fast_ship) i.fast_ship = fast_ship
-                console.log()
                 await i.save()
             }
             return res.json(category)
