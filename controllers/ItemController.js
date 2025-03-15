@@ -1074,7 +1074,7 @@ class ItemController {
     async convertClothesSizes(req, res, next) {
         try {
             const sizePatterns = [
-                '4XS', '3XS', '2XS', '2XL', '3XL', '4XL'
+                '6XS', '5XS', '4XS', '3XS', '2XS', '2XL', '3XL', '4XL', '5XL', '6XL'
             ]
             const sizeRegex = /^\d+\/(XXXXS|XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL)$/
             const sizes = await Size.findAll({
