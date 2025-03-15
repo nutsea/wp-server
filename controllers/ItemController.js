@@ -71,7 +71,7 @@ class ItemController {
                         }
                         for (let j of data.image.spuImage.images) {
                             const pixel = await getFirstPixelColor(j.url)
-                            if (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1) {
+                            if (category !== 'shoes' || (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1)) {
                                 if (!isItem.img) {
                                     isItem.img = j.url
                                     await isItem.save()
@@ -229,7 +229,7 @@ class ItemController {
                             isItem.max_price = 0
                             for (let j of data.image.spuImage.images) {
                                 const pixel = await getFirstPixelColor(j.url)
-                                if (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1) {
+                                if (category !== 'shoes' || (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1)) {
                                     if (!isItem.img) {
                                         isItem.img = j.url
                                         await isItem.save()
@@ -411,7 +411,7 @@ class ItemController {
                     await getPoizonItem(i, timeElapsed).then(async data => {
                         for (let j of data.image.spuImage.images) {
                             const pixel = await getFirstPixelColor(j.url)
-                            if (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1) {
+                            if (category !== 'shoes' || (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1)) {
                                 if (!item.img) {
                                     item.img = j.url
                                     await item.save()
