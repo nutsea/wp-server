@@ -412,7 +412,7 @@ class ItemController {
                         item.img = data.image.spuImage.images[0]
                         await item.save()
                         for (let j of data.image.spuImage.images) {
-                            const oldPhoto = await Photo.findOne({ where: { img: j.url } })
+                            const oldPhoto = await Photo.findOne({ where: { img: j.url, item_uid: i.toString() } })
                             if (oldPhoto)
                                 await oldPhoto.destroy()
                         }
