@@ -412,6 +412,11 @@ class ItemController {
                         item.img = data.image.spuImage.images[0]
                         await item.save()
                         for (let j of data.image.spuImage.images) {
+                            const oldPhoto = await Photo.findOne({ where: { img: j.url } })
+                            if (oldPhoto)
+                                await oldPhoto.destroy()
+                        }
+                        for (let j of data.image.spuImage.images) {
                             const pixel = await getFirstPixelColor(j.url)
                             if (category !== 'shoes' || (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1)) {
                                 if (!item.img) {
