@@ -207,16 +207,19 @@ class ItemController {
                                 }
                             }
                             if (category !== 'shoes') {
+                                console.log(brand, 111)
                                 const fastShip = await Constants.findOne({ where: { name: brand, type: 'express' } })
                                 if (fastShip) {
-                                    fastShip.value = fast_ship
+                                    if (fast_ship)
+                                        fastShip.value = fast_ship
                                     await fastShip.save()
                                 } else {
                                     await Constants.create({ name: brand, value: fast_ship, type: 'express' })
                                 }
                                 const slowShip = await Constants.findOne({ where: { name: brand, type: 'standart' } })
                                 if (slowShip) {
-                                    slowShip.value = slow_ship
+                                    if (slow_ship)
+                                        slowShip.value = slow_ship
                                     await slowShip.save()
                                 } else {
                                     await Constants.create({ name: brand, value: slow_ship, type: 'standart' })
@@ -244,17 +247,16 @@ class ItemController {
                             }
                             for (let j = 0; j < data.skus.length; j++) {
                                 if (data.skus[j] && validProperty(data.skus[j])) {
-                                    console.log(123)
-                                    // if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
-                                    //     const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
-                                    //     if (!isExist) {
-                                    //         const deleted = await DeletedItems.create({ item_uid: i.toString() })
-                                    //         console.log(deleted)
-                                    //     }
-                                    //     const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
-                                    //     await itemToDelete.destroy()
-                                    //     throw new Error(`Failed to create ${i}`)
-                                    // }
+                                    if (isNumericString(validProperty(data.skus[j])) && category === 'clothes') {
+                                        const isExist = await DeletedItems.findOne({ where: { item_uid: i.toString() } })
+                                        if (!isExist) {
+                                            const deleted = await DeletedItems.create({ item_uid: i.toString() })
+                                            console.log(deleted)
+                                        }
+                                        const itemToDelete = await Item.findOne({ where: { item_uid: i.toString() } })
+                                        await itemToDelete.destroy()
+                                        throw new Error(`Failed to create ${i}`)
+                                    }
                                     const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
                                     if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                         isItem.min_price = clientPrice
@@ -447,7 +449,6 @@ class ItemController {
                                 }
                                 const defaultSize = validProperty(data.skus[j])
                                 const sizeDef = replaceValid(defaultSize)
-                                console.log(sizeDef)
                                 const sameSizes = await Size.findAll({ where: { size_default: sizeDef, item_uid: i.toString() } })
                                 if (sameSizes && sameSizes.length > 0) {
                                     for (let k of sameSizes) {
@@ -486,7 +487,7 @@ class ItemController {
                                 } else {
                                     if (clientPrice) {
                                         const sizeDef = replaceValid(defaultSize)
-                                        if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
+                                        if (list[0].sizeKey !== 'EU') {
                                             await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
                                         } else {
                                             await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
