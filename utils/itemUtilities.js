@@ -160,7 +160,16 @@ const getFirstPixelColor = async (imageUrl) => {
 }
 
 const isNumericString = (str) => {
-    return /^[0-9]+$/.test(str)
+    // return /^[0-9]+$/.test(str)
+    return /^[A-Za-z]+\/[A-Za-z]+(\/[A-Za-z]+)*$/.test(str)
+}
+
+const allNumericSizes = (arr) => {
+    let check = true
+    for (let i of arr) {
+        if (!isNumericString(validProperty(i))) check = false
+    }
+    return check
 }
 
 module.exports = {
@@ -176,5 +185,6 @@ module.exports = {
     isValidSize,
     sortItemsBySize,
     getFirstPixelColor,
-    isNumericString
+    isNumericString,
+    allNumericSizes
 }
