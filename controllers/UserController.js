@@ -152,7 +152,8 @@ class UserController {
                             { link_type: { [Op.iLike]: `%${search}%` } },
                         ]
                     })
-                }
+                },
+                order: [['createdAt', 'DESC']]
             })
             return res.json(users)
         } catch (e) {
