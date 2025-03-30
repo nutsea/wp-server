@@ -194,7 +194,7 @@ class OrderController {
                         ]
                     })
                 },
-                order: [['createdAt', 'ASC']]
+                order: [['createdAt', 'DESC']]
             })
             for (let i of orders) {
                 await OrderItem.findAll({ where: { order_id: i.id } }).then(data => {
@@ -229,7 +229,7 @@ class OrderController {
                         ]
                     })
                 },
-                order: [['createdAt', 'ASC']]
+                order: [['createdAt', 'DESC']]
             })
             for (let i of orders) {
                 await OrderItem.findAll({ where: { order_id: i.id } }).then(data => {
