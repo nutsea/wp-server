@@ -96,9 +96,11 @@ class ItemController {
                             await itemToDelete.destroy()
                             throw new Error(`Failed to create ${i}`)
                         }
+                        isItem.min_price = 100000000
+                        isItem.max_price = 0
                         for (let j = 0; j < data.skus.length; j++) {
                             if (data.skus[j] && validProperty(data.skus[j]) && !isNumericString(replaceValid(validProperty(data.skus[j])))) {
-                                const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
+                                const { clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12 } = formatSkus(data.skus[j])
                                 if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                     isItem.min_price = clientPrice
                                     isItem.save()
@@ -117,9 +119,11 @@ class ItemController {
                                             k.price_0 = price_0
                                             k.price_2 = price_2
                                             k.price_3 = price_3
+                                            k.price_12 = price_12
                                             k.delivery_0 = delivery_0
                                             k.delivery_2 = delivery_2
                                             k.delivery_3 = delivery_3
+                                            k.delivery_12 = delivery_12
                                             await k.save()
                                         } else {
                                             await k.destroy()
@@ -133,9 +137,9 @@ class ItemController {
                                             const size = replaceValid(k.sizeValue[defaultIndex])
                                             const isSize = await Size.findOne({ where: { size, size_type: k.sizeKey, size_default: sizeDef, item_uid: i.toString() } })
                                             if (!isSize && clientPrice) {
-                                                await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                                 if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
-                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
                                                 }
                                             }
                                         }
@@ -144,16 +148,16 @@ class ItemController {
                                     if (clientPrice && list[0]) {
                                         const sizeDef = replaceValid(defaultSize)
                                         if (list[0] && list[0].sizeKey !== 'EU') {
-                                            await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: "EU", size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                            await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: "EU", size_default: sizeDef, item_category: category, brand: isItem.brand })
                                         } else {
-                                            await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                            await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                         }
                                         const defaultTemplate = list[0].sizeValue
                                         const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                         for (let k of list) {
                                             if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                                 const size = replaceValid(k.sizeValue[defaultIndex])
-                                                await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                             }
                                         }
                                     }
@@ -248,7 +252,12 @@ class ItemController {
                             isItem.max_price = 0
                             for (let j of data.image.spuImage.images) {
                                 const pixel = await getFirstPixelColor(j.url)
+                                // if (!isItem.img) {
+                                //     isItem.img = j.url
+                                //     await isItem.save()
+                                // }
                                 if (category !== 'shoes' || (pixel.r > 250 && pixel.g > 250 && pixel.b > 250 && pixel.a === 1)) {
+                                    // console.log()
                                     if (!isItem.img) {
                                         isItem.img = j.url
                                         await isItem.save()
@@ -275,7 +284,7 @@ class ItemController {
                             }
                             for (let j = 0; j < data.skus.length; j++) {
                                 if (data.skus[j] && validProperty(data.skus[j]) && !isNumericString(replaceValid(validProperty(data.skus[j])))) {
-                                    const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
+                                    const { clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12 } = formatSkus(data.skus[j])
                                     if ((!isItem.min_price || isItem.min_price === null || isItem.min_price > clientPrice) && clientPrice) {
                                         isItem.min_price = clientPrice
                                         isItem.save()
@@ -294,12 +303,16 @@ class ItemController {
                                                 k.price_0 = price_0
                                                 k.price_2 = price_2
                                                 k.price_3 = price_3
+                                                k.price_12 = price_12
                                                 k.delivery_0 = delivery_0
                                                 k.delivery_2 = delivery_2
                                                 k.delivery_3 = delivery_3
+                                                k.delivery_12 = delivery_12
                                                 await k.save()
                                             } else {
+                                                // console.log(clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, 11111)
                                                 await k.destroy()
+                                                // console.log('yes')
                                             }
                                         }
                                         const defaultTemplate = list[0].sizeValue
@@ -309,9 +322,9 @@ class ItemController {
                                                 const size = replaceValid(k.sizeValue[defaultIndex])
                                                 const isSize = await Size.findOne({ where: { size, size_type: k.sizeKey, size_default: sizeDef, item_uid: i.toString() } })
                                                 if (!isSize && clientPrice) {
-                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                                     if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
-                                                        await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                        await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
                                                     }
                                                 }
                                             }
@@ -320,16 +333,16 @@ class ItemController {
                                         if (clientPrice && list[0]) {
                                             const sizeDef = replaceValid(defaultSize)
                                             if (list[0] && list[0].sizeKey !== 'EU') {
-                                                await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: isItem.brand })
                                             } else {
-                                                list[0] && await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                list[0] && await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                             }
                                             const defaultTemplate = list[0].sizeValue
                                             const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                             for (let k of list) {
                                                 if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                                     const size = replaceValid(k.sizeValue[defaultIndex])
-                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
+                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: isItem.brand })
                                                 }
                                             }
                                         }
@@ -491,7 +504,7 @@ class ItemController {
                                 }
                             }
                             if (data.skus[j] && validProperty(data.skus[j]) && !isNumericString(replaceValid(validProperty(data.skus[j])))) {
-                                const { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 } = formatSkus(data.skus[j])
+                                const { clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12 } = formatSkus(data.skus[j])
                                 if ((!item.min_price || item.min_price === null || item.min_price > clientPrice) && clientPrice) {
                                     item.min_price = clientPrice
                                     item.save()
@@ -510,9 +523,11 @@ class ItemController {
                                             k.price_0 = price_0
                                             k.price_2 = price_2
                                             k.price_3 = price_3
+                                            k.price_12 = price_12
                                             k.delivery_0 = delivery_0
                                             k.delivery_2 = delivery_2
                                             k.delivery_3 = delivery_3
+                                            k.delivery_12 = delivery_12
                                             await k.save()
                                         } else {
                                             await k.destroy()
@@ -525,14 +540,14 @@ class ItemController {
                                             const size = replaceValid(k.sizeValue[defaultIndex])
                                             const isSize = await Size.findOne({ where: { size, size_type: k.sizeKey, size_default: sizeDef, item_uid: i.toString() } })
                                             if (!isSize && clientPrice) {
-                                                await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
+                                                await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
                                                 if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
-                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
+                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
                                                 }
                                             } else if (list[0].sizeKey !== 'EU' && k.sizeKey === 'FR') {
                                                 const isDefaultSize = await Size.findOne({ where: { size, size_type: 'EU', size_default: sizeDef, item_uid: i.toString() } })
                                                 if (!isDefaultSize) {
-                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
+                                                    await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
                                                 }
                                             }
                                         }
@@ -541,16 +556,16 @@ class ItemController {
                                     if (clientPrice && list[0]) {
                                         const sizeDef = replaceValid(defaultSize)
                                         if (list && list[0].sizeKey !== 'EU') {
-                                            await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
+                                            await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: 'EU', size_default: sizeDef, item_category: category, brand: item.brand })
                                         } else {
-                                            await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
+                                            await Size.create({ size: sizeDef, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: list[0].sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
                                         }
                                         const defaultTemplate = list[0].sizeValue
                                         const defaultIndex = defaultTemplate.findIndex(item => item === defaultSize)
                                         for (let k of list) {
                                             if (k.sizeValue[defaultIndex] && (k.sizeValue[defaultIndex] !== defaultSize || k.sizeKey === 'FR') && k.sizeKey) {
                                                 const size = replaceValid(k.sizeValue[defaultIndex])
-                                                await Size.create({ size, price: clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
+                                                await Size.create({ size, price: clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12, item_uid: i.toString(), size_type: k.sizeKey, size_default: sizeDef, item_category: category, brand: item.brand })
                                             }
                                         }
                                     }

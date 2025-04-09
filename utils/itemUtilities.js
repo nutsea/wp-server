@@ -27,7 +27,7 @@ const isUUID = (id) => {
 
 const formatSkus = (skus) => {
     const price = skus.price.prices
-    let price_0, price_2, price_3, delivery_0, delivery_2, delivery_3
+    let price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12
     const tradeType_0 = price.find(item => item.tradeType === 0)
     if (tradeType_0 && ((tradeType_0 && !tradeType_0.channelAdditionInfoDTO) || (tradeType_0 && !tradeType_0.channelAdditionInfoDTO.symbol))) {
         price_0 = tradeType_0.price
@@ -43,6 +43,11 @@ const formatSkus = (skus) => {
         price_3 = price.find(item => item.tradeType === 3).price
         delivery_3 = tradeType_3.timeDelivery.min.toString() + '-' + tradeType_3.timeDelivery.max.toString()
     }
+    const tradeType_12 = price.find(item => item.tradeType === 12)
+    if (tradeType_12 && ((tradeType_12 && !tradeType_12.channelAdditionInfoDTO) || (tradeType_12 && !tradeType_12.channelAdditionInfoDTO.symbol))) {
+        price_12 = price.find(item => item.tradeType === 12).price
+        delivery_12 = tradeType_12.timeDelivery.min.toString() + '-' + tradeType_12.timeDelivery.max.toString()
+    }
     let clientPrice = null
     let timeDelivery = null
     if (price_0) {
@@ -54,6 +59,9 @@ const formatSkus = (skus) => {
     } else if (price_3) {
         clientPrice = price_3
         timeDelivery = tradeType_3.timeDelivery.max
+    } else if (price_12) {
+        clientPrice = price_12
+        timeDelivery = tradeType_12.timeDelivery.max
     }
 
     if (price_0 && (clientPrice - price_0) <= 2000 && tradeType_0.timeDelivery.max <= timeDelivery) {
@@ -74,8 +82,16 @@ const formatSkus = (skus) => {
         (clientPrice > price_3 && (clientPrice - price_3) >= 2000)
     ) {
         clientPrice = price_3
+        timeDelivery = tradeType_3.timeDelivery.max
     }
-    return { clientPrice, price_0, price_2, price_3, delivery_0, delivery_2, delivery_3 }
+    if (
+        price_12 &&
+        (clientPrice < price_12 && (price_12 - clientPrice) <= 2000 && tradeType_12.timeDelivery.max <= timeDelivery) ||
+        (clientPrice > price_12 && (clientPrice - price_12) >= 2000)
+    ) {
+        clientPrice = price_12
+    }
+    return { clientPrice, price_0, price_2, price_3, price_12, delivery_0, delivery_2, delivery_3, delivery_12 }
 }
 
 const validProperty = (data) => {
